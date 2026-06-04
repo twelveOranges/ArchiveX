@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ArchiveX</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <div id="app" class="archivex-app">
+    <div id="main-container" class="archivex-view-container"></div>
+  </div>
+
+  <!-- Modal Overlay -->
+  <div id="modal-overlay" class="modal-overlay hidden" onclick="closeModal(event)">
+    <div id="modal-content" class="modal-content" onclick="event.stopPropagation()"></div>
+  </div>
+
+  <!-- Lightbox -->
+  <div id="lightbox" class="lightbox hidden">
+    <button class="lightbox-close" onclick="closeLightbox()">×</button>
+    <button class="lightbox-nav lightbox-prev" onclick="lightboxPrev()">‹</button>
+    <button class="lightbox-nav lightbox-next" onclick="lightboxNext()">›</button>
+    <div class="lightbox-img-container">
+      <img id="lightbox-img" class="lightbox-img" src="" alt="">
+    </div>
+    <div id="lightbox-counter" class="lightbox-counter"></div>
+  </div>
+
+  <script src="/app.js"></script>
+</body>
+</html>
