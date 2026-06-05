@@ -1,0 +1,9 @@
+{
+  "id": "archive-x",
+  "name": "ArchiveX",
+  "version": "1.0.0",
+  "minAppVersion": "0.15.0",
+  "description": "A database-like view plugin that reads YAML files and displays data as cards, supporting images, videos, and other file references.",
+  "author": "Timeo",
+  "isDesktopOnly": false
+}

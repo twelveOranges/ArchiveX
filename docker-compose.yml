@@ -1,0 +1,16 @@
+version: "3.8"
+
+services:
+  archivex:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: archivex-web
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./data:/data
+    environment:
+      - PORT=3000
+      - DATA_DIR=/data
+    restart: unless-stopped

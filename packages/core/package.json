@@ -1,0 +1,26 @@
+{
+  "name": "@archivex/core",
+  "version": "1.0.0",
+  "description": "ArchiveX shared core - types, parser, utilities, and DataProvider interface",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsup src/index.ts --format esm --dts --clean",
+    "dev": "tsup src/index.ts --format esm --dts --watch"
+  },
+  "dependencies": {
+    "pinyin-pro": "^3.28.1",
+    "yaml": "^2.3.4"
+  },
+  "devDependencies": {
+    "tsup": "^8.0.1",
+    "typescript": "^5.3.3"
+  }
+}

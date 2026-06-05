@@ -1,0 +1,15 @@
+<script lang="ts">
+  export let onClose: () => void;
+
+  function handleOverlayClick(e: MouseEvent) {
+    if (e.target === e.currentTarget) {
+      onClose();
+    }
+  }
+</script>
+
+<div class="modal-overlay" on:click={handleOverlayClick} on:keypress={() => {}} role="dialog" tabindex="-1">
+  <div class="modal-content" on:click|stopPropagation={() => {}} on:keypress={() => {}} role="document">
+    <slot />
+  </div>
+</div>

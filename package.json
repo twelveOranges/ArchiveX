@@ -1,24 +1,17 @@
 {
-  "name": "archive-x",
+  "name": "archivex",
   "version": "1.0.0",
-  "description": "Obsidian plugin for database-like YAML data display",
-  "main": "main.js",
-  "scripts": {
-    "dev": "node esbuild.config.mjs",
-    "build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production"
-  },
-  "keywords": [],
+  "private": true,
+  "description": "ArchiveX - Database-like YAML data management for Obsidian and Web",
   "author": "Timeo",
   "license": "MIT",
-  "devDependencies": {
-    "@types/node": "^20.11.0",
-    "builtin-modules": "^3.3.0",
-    "esbuild": "^0.19.11",
-    "obsidian": "latest",
-    "typescript": "^5.3.3"
-  },
-  "dependencies": {
-    "pinyin-pro": "^3.28.1",
-    "yaml": "^2.3.4"
+  "scripts": {
+    "dev:web": "pnpm --filter @archivex/web dev",
+    "dev:obsidian": "pnpm --filter @archivex/obsidian dev",
+    "build": "pnpm --filter @archivex/core build && pnpm --filter @archivex/web build && pnpm --filter @archivex/obsidian build",
+    "build:web": "pnpm --filter @archivex/core build && pnpm --filter @archivex/web build",
+    "build:obsidian": "pnpm --filter @archivex/core build && pnpm --filter @archivex/obsidian build",
+    "server": "pnpm --filter @archivex/web server",
+    "start": "pnpm build:web && pnpm server"
   }
 }

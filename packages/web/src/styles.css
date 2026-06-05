@@ -1,0 +1,1250 @@
+/* ==================== CSS Variables (standalone theme) ==================== */
+:root {
+  --bg-primary: #1e1e2e;
+  --bg-secondary: #2a2a3e;
+  --bg-hover: #33334a;
+  --bg-border: #3a3a52;
+  --bg-error: #e74c3c;
+  --text-normal: #e0e0e0;
+  --text-muted: #8a8aa0;
+  --text-faint: #5a5a70;
+  --text-on-accent: #ffffff;
+  --accent: #7c6ff7;
+  --accent-hover: #6a5ce0;
+  --accent-rgb: 124, 111, 247;
+  --font-main: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+  --font-mono: "SF Mono", "Fira Code", "Cascadia Code", monospace;
+  --radius: 8px;
+  --shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    --bg-primary: #ffffff;
+    --bg-secondary: #f5f5f7;
+    --bg-hover: #eaeaef;
+    --bg-border: #d8d8e0;
+    --bg-error: #e74c3c;
+    --text-normal: #1a1a2e;
+    --text-muted: #6a6a80;
+    --text-faint: #9a9ab0;
+    --text-on-accent: #ffffff;
+    --accent: #6c5ce7;
+    --accent-hover: #5a4bd6;
+    --accent-rgb: 108, 92, 231;
+    --shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  }
+}
+
+/* ==================== Reset & Base ==================== */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: var(--font-main);
+  background: var(--bg-primary);
+  color: var(--text-normal);
+  min-height: 100vh;
+}
+
+.archivex-app {
+  min-height: 100vh;
+}
+
+.archivex-view-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.hidden {
+  display: none !important;
+}
+
+/* ==================== Home Page ==================== */
+.archivex-home-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+
+.archivex-home-header h2 {
+  font-size: 1.6em;
+  font-weight: 700;
+}
+
+.archivex-home-actions {
+  display: flex;
+  gap: 8px;
+}
+
+/* ==================== Database Grid ==================== */
+.archivex-db-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 16px;
+}
+
+.archivex-db-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  border: 1px solid var(--bg-border);
+  border-radius: var(--radius);
+  background: var(--bg-primary);
+  cursor: pointer;
+  transition: box-shadow 0.2s, transform 0.2s, border-color 0.2s;
+  position: relative;
+}
+
+.archivex-db-card:hover {
+  box-shadow: var(--shadow);
+  transform: translateY(-2px);
+  border-color: var(--accent);
+}
+
+.archivex-db-card-icon {
+  font-size: 2em;
+}
+
+.archivex-db-card-info h3 {
+  margin: 0 0 4px 0;
+  font-size: 1em;
+  font-weight: 600;
+}
+
+.archivex-db-card-meta {
+  font-size: 0.82em;
+  color: var(--text-muted);
+}
+
+.archivex-db-card-actions {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: flex;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.archivex-db-card:hover .archivex-db-card-actions {
+  opacity: 1;
+}
+
+.archivex-db-card-action-btn {
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 6px;
+  background: var(--bg-secondary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85em;
+  transition: all 0.15s;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+}
+
+.archivex-db-card-action-btn:hover {
+  background: var(--bg-hover);
+  transform: scale(1.1);
+}
+
+.archivex-db-card-delete-btn:hover {
+  background: var(--bg-error);
+  color: white;
+}
+
+/* Create Card */
+.archivex-db-card-create {
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 100px;
+  border-style: dashed;
+  border-width: 2px;
+}
+
+.archivex-db-card-create:hover {
+  border-color: var(--accent);
+  background: var(--bg-secondary);
+}
+
+.archivex-db-card-create-icon {
+  font-size: 2.5em;
+  font-weight: 300;
+  color: var(--text-muted);
+}
+
+.archivex-db-card-create:hover .archivex-db-card-create-icon {
+  color: var(--accent);
+}
+
+.archivex-db-card-create-text {
+  font-size: 0.9em;
+  color: var(--text-muted);
+}
+
+.archivex-db-card-create:hover .archivex-db-card-create-text {
+  color: var(--accent);
+}
+
+/* ==================== Detail Header ==================== */
+.archivex-detail-header {
+  margin-bottom: 20px;
+}
+
+.archivex-detail-title {
+  text-align: center;
+  margin: 0 0 12px 0;
+  font-size: 1.4em;
+  font-weight: 700;
+}
+
+.archivex-detail-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--bg-border);
+}
+
+.archivex-nav-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.archivex-size-controls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.archivex-size-btn {
+  font-size: 1em;
+  padding: 2px 8px;
+  font-weight: 700;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.archivex-size-btn:hover {
+  color: var(--accent);
+  background: var(--bg-hover);
+}
+
+.archivex-size-label {
+  font-size: 0.75em;
+  color: var(--text-muted);
+  min-width: 24px;
+  text-align: center;
+}
+
+.archivex-view-select {
+  padding: 4px 10px;
+  border-radius: 4px;
+  border: 1px solid var(--bg-border);
+  background: var(--bg-secondary);
+  color: var(--text-normal);
+  font-size: 0.85em;
+  cursor: pointer;
+  outline: none;
+}
+
+.archivex-view-select:focus {
+  border-color: var(--accent);
+}
+
+/* Sort controls */
+.archivex-sort-controls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.archivex-sort-select {
+  padding: 4px 10px;
+  border-radius: 4px;
+  border: 1px solid var(--bg-border);
+  background: var(--bg-secondary);
+  color: var(--text-normal);
+  font-size: 0.8em;
+  cursor: pointer;
+  outline: none;
+}
+
+.archivex-sort-select:focus {
+  border-color: var(--accent);
+}
+
+.archivex-sort-order-btn {
+  padding: 3px 8px;
+  border-radius: 4px;
+  border: 1px solid var(--bg-border);
+  background: var(--bg-secondary);
+  color: var(--text-normal);
+  font-size: 0.95em;
+  font-weight: 700;
+  cursor: pointer;
+  line-height: 1;
+  transition: all 0.15s;
+}
+
+.archivex-sort-order-btn:hover {
+  background: var(--bg-hover);
+  border-color: var(--accent);
+}
+
+/* Icon button */
+.archivex-btn-icon {
+  padding: 4px 8px;
+  border-radius: 4px;
+  border: 1px solid var(--bg-border);
+  background: var(--bg-secondary);
+  color: var(--text-muted);
+  font-size: 0.9em;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.archivex-btn-icon:hover {
+  background: var(--bg-hover);
+  border-color: var(--accent);
+  color: var(--text-normal);
+}
+
+.archivex-btn-icon.active {
+  background: var(--accent);
+  color: var(--text-on-accent);
+  border-color: var(--accent);
+}
+
+/* Multi-select action bar */
+.archivex-multiselect-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  margin: 8px 0;
+  background: var(--bg-secondary);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius);
+}
+
+.archivex-multiselect-count {
+  font-size: 0.85em;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.archivex-multiselect-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.archivex-btn-danger:disabled,
+.archivex-btn-primary:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* Card multi-select checkbox */
+.archivex-card-checkbox {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  z-index: 10;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.archivex-checkbox-checked {
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  background: var(--accent);
+  color: var(--text-on-accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.archivex-checkbox-unchecked {
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  border: 2px solid var(--text-muted);
+  background: var(--bg-primary);
+}
+
+.archivex-card.selected {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent);
+}
+.archivex-btn {
+  padding: 6px 14px;
+  border-radius: var(--radius);
+  border: 1px solid var(--bg-border);
+  background: var(--bg-secondary);
+  color: var(--text-normal);
+  cursor: pointer;
+  font-size: 0.85em;
+  transition: all 0.15s;
+}
+
+.archivex-btn:hover {
+  background: var(--bg-hover);
+  border-color: var(--accent);
+}
+
+.archivex-btn-primary {
+  background: var(--accent);
+  color: var(--text-on-accent);
+  border-color: var(--accent);
+  font-weight: 500;
+}
+
+.archivex-btn-primary:hover {
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
+}
+
+.archivex-btn-danger {
+  background: var(--bg-error);
+  color: white;
+  border-color: var(--bg-error);
+}
+
+.archivex-btn-danger:hover {
+  opacity: 0.85;
+}
+
+.archivex-btn-text {
+  padding: 4px 8px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 0.85em;
+  font-weight: 500;
+  transition: color 0.15s;
+}
+
+.archivex-btn-text:hover {
+  color: var(--accent);
+}
+
+/* ==================== Card Grid ==================== */
+.archivex-card-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+}
+
+.archivex-card {
+  border: 1px solid var(--bg-border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--bg-primary);
+  transition: box-shadow 0.2s, transform 0.2s;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.archivex-card:hover {
+  box-shadow: var(--shadow);
+  transform: translateY(-2px);
+}
+
+.archivex-card-cover {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
+  background: var(--bg-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.archivex-card-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+
+.archivex-card-cover-placeholder {
+  font-size: 1.8em;
+  color: var(--text-muted);
+}
+
+.archivex-card-body {
+  padding: 4px 6px;
+}
+
+.archivex-card-title {
+  margin: 0;
+  font-size: 0.75em;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: center;
+}
+
+/* Add record card */
+.archivex-card.archivex-add-card {
+  border-style: dashed;
+  border-width: 2px;
+  align-items: center;
+  justify-content: center;
+}
+
+.archivex-card.archivex-add-card:hover {
+  border-color: var(--accent);
+  background: var(--bg-secondary);
+}
+
+.archivex-add-card-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 1 / 1;
+  width: 100%;
+  gap: 6px;
+}
+
+.archivex-add-card-content .archivex-db-card-create-icon {
+  font-size: 2em;
+}
+
+.archivex-add-card-content .archivex-db-card-create-text {
+  font-size: 0.75em;
+}
+
+/* ==================== Gallery / Images View ==================== */
+.archivex-gallery-item {
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
+  border-radius: 6px;
+  cursor: pointer;
+  background: var(--bg-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.archivex-gallery-item:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow);
+}
+
+.archivex-gallery-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+
+.archivex-images-filter {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 0;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+
+.archivex-images-filter-label {
+  font-size: 0.82em;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.archivex-images-filter-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.82em;
+  cursor: pointer;
+}
+
+.archivex-images-filter-item input[type="checkbox"] {
+  cursor: pointer;
+}
+
+/* ==================== Table View ==================== */
+.archivex-table-wrapper {
+  overflow-x: auto;
+  border-radius: var(--radius);
+  border: 1px solid var(--bg-border);
+}
+
+.archivex-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9em;
+}
+
+.archivex-table th {
+  background: var(--bg-secondary);
+  padding: 10px 14px;
+  text-align: left;
+  font-weight: 600;
+  border-bottom: 2px solid var(--bg-border);
+  white-space: nowrap;
+}
+
+.archivex-table td {
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--bg-border);
+  vertical-align: middle;
+}
+
+.archivex-table tr:hover td {
+  background: var(--bg-hover);
+}
+
+/* ==================== List View ==================== */
+.archivex-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.archivex-list-item {
+  display: flex;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid var(--bg-border);
+  border-radius: var(--radius);
+  background: var(--bg-primary);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.archivex-list-item:hover {
+  background: var(--bg-secondary);
+}
+
+.archivex-list-thumb {
+  width: 64px;
+  height: 64px;
+  flex-shrink: 0;
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--bg-secondary);
+}
+
+.archivex-list-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.archivex-list-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.archivex-list-title {
+  margin: 0 0 4px 0;
+  font-size: 1em;
+  font-weight: 600;
+}
+
+.archivex-list-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.archivex-list-meta-item {
+  font-size: 0.82em;
+  color: var(--text-muted);
+  background: var(--bg-secondary);
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+/* ==================== Tags ==================== */
+.archivex-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.archivex-tag {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 12px;
+  background: var(--accent);
+  color: var(--text-on-accent);
+  font-size: 0.78em;
+  font-weight: 500;
+}
+
+/* ==================== Modal ==================== */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(4px);
+}
+
+.modal-content {
+  background: var(--bg-primary);
+  border-radius: 12px;
+  padding: 24px;
+  max-width: 600px;
+  width: 90%;
+  max-height: 85vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+}
+
+.modal-title {
+  font-size: 1.3em;
+  font-weight: 700;
+  margin-bottom: 20px;
+}
+
+.modal-group {
+  margin-bottom: 16px;
+}
+
+.modal-label {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 600;
+  font-size: 0.9em;
+}
+
+.modal-input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid var(--bg-border);
+  border-radius: 6px;
+  background: var(--bg-secondary);
+  color: var(--text-normal);
+  font-size: 0.9em;
+  font-family: inherit;
+  box-sizing: border-box;
+  outline: none;
+}
+
+.modal-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(var(--accent-rgb), 0.2);
+}
+
+.modal-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--bg-border);
+}
+
+/* ==================== Field List ==================== */
+.archivex-field-list {
+  border: 1px solid var(--bg-border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  margin-bottom: 12px;
+}
+
+.archivex-field-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--bg-border);
+  position: relative;
+  transition: background 0.15s;
+}
+
+.archivex-field-row:last-child {
+  border-bottom: none;
+}
+
+.archivex-field-row:hover {
+  background: var(--bg-secondary);
+}
+
+.archivex-field-row-icon {
+  font-size: 1.1em;
+  flex-shrink: 0;
+}
+
+.archivex-field-row-label {
+  flex: 1;
+  font-size: 0.9em;
+  font-weight: 500;
+}
+
+.archivex-field-row-type {
+  font-size: 0.78em;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: var(--bg-border);
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.archivex-field-row-actions {
+  display: flex;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.archivex-field-row:hover .archivex-field-row-actions {
+  opacity: 1;
+}
+
+.archivex-field-action-btn {
+  padding: 2px 8px;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.78em;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.archivex-field-edit-btn {
+  background: var(--accent);
+  color: var(--text-on-accent);
+}
+
+.archivex-field-delete-btn {
+  background: var(--bg-error);
+  color: white;
+}
+
+/* ==================== Type Menu ==================== */
+.archivex-type-menu {
+  margin-top: 8px;
+  background: var(--bg-primary);
+  border: 1px solid var(--bg-border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 6px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px;
+}
+
+.archivex-type-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.85em;
+  transition: background 0.1s;
+}
+
+.archivex-type-menu-item:hover {
+  background: var(--bg-hover);
+}
+
+/* ==================== Add Field Button ==================== */
+.archivex-add-field-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border: 2px dashed var(--bg-border);
+  border-radius: var(--radius);
+  cursor: pointer;
+  color: var(--text-muted);
+  font-size: 0.88em;
+  background: none;
+  transition: all 0.15s;
+}
+
+.archivex-add-field-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--bg-secondary);
+}
+
+/* ==================== Preview Modal ==================== */
+.preview-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--bg-border);
+}
+
+.preview-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.preview-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.preview-field {
+  border-bottom: 1px solid var(--bg-border);
+  padding-bottom: 10px;
+}
+
+.preview-field-label {
+  font-size: 0.8em;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+  text-transform: uppercase;
+}
+
+.preview-field-value {
+  font-size: 0.95em;
+}
+
+.preview-media {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.preview-img {
+  max-width: 200px;
+  max-height: 200px;
+  border-radius: 6px;
+  object-fit: cover;
+  cursor: pointer;
+}
+
+.preview-video {
+  max-width: 100%;
+  border-radius: 6px;
+}
+
+.preview-audio {
+  width: 100%;
+}
+
+/* ==================== Lightbox ==================== */
+.lightbox {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.92);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.lightbox-close {
+  position: absolute;
+  top: 16px;
+  right: 20px;
+  background: none;
+  border: none;
+  color: white;
+  font-size: 2.5em;
+  cursor: pointer;
+  z-index: 10;
+  line-height: 1;
+}
+
+.lightbox-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  border: none;
+  font-size: 2.5em;
+  padding: 8px 16px;
+  cursor: pointer;
+  border-radius: 6px;
+  z-index: 10;
+  transition: background 0.15s;
+}
+
+.lightbox-nav:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.lightbox-prev {
+  left: 16px;
+}
+
+.lightbox-next {
+  right: 16px;
+}
+
+.lightbox-img-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  padding: 60px;
+}
+
+.lightbox-img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  border-radius: 4px;
+  user-select: none;
+}
+
+.lightbox-counter {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.6);
+  color: white;
+  padding: 4px 14px;
+  border-radius: 12px;
+  font-size: 0.85em;
+}
+
+/* ==================== Media Dropzone ==================== */
+.archivex-media-dropzone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 24px 16px;
+  border: 2px dashed var(--bg-border);
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: all 0.2s;
+  background: var(--bg-secondary);
+}
+
+.archivex-media-dropzone:hover,
+.archivex-media-dropzone.active {
+  border-color: var(--accent);
+  background: var(--bg-primary);
+}
+
+.archivex-media-dropzone-icon {
+  font-size: 2em;
+}
+
+.archivex-media-dropzone-text {
+  font-size: 0.85em;
+  color: var(--text-muted);
+}
+
+.archivex-media-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.archivex-media-list-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border: 1px solid var(--bg-border);
+  border-radius: 6px;
+  background: var(--bg-secondary);
+  font-size: 0.85em;
+}
+
+.archivex-media-list-thumb {
+  width: 32px;
+  height: 32px;
+  object-fit: cover;
+  border-radius: 4px;
+}
+
+.archivex-media-list-remove {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 1.1em;
+}
+
+.archivex-media-list-remove:hover {
+  color: var(--bg-error);
+}
+
+/* ==================== Empty State ==================== */
+.archivex-empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--text-muted);
+}
+
+.archivex-empty-icon {
+  font-size: 3em;
+  margin-bottom: 12px;
+}
+
+/* ==================== Settings Page ==================== */
+.settings-section {
+  margin-bottom: 32px;
+}
+
+.settings-section h3 {
+  margin-bottom: 16px;
+  font-size: 1.1em;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  font-size: 0.85em;
+  letter-spacing: 0.5px;
+}
+
+/* ==================== Responsive ==================== */
+@media (max-width: 768px) {
+  .archivex-view-container {
+    padding: 12px;
+  }
+
+  .archivex-db-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .modal-content {
+    width: 95%;
+    padding: 16px;
+  }
+
+.archivex-detail-nav {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+}
+
+/* ==================== Media Select Button ==================== */
+.archivex-media-select-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: var(--bg-secondary);
+  border: 1px dashed var(--bg-border);
+  border-radius: var(--radius);
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 0.9em;
+  transition: all 0.2s;
+}
+.archivex-media-select-btn:hover {
+  background: var(--bg-hover);
+  border-color: var(--accent);
+  color: var(--text-normal);
+}
+
+/* ==================== Image Cropper ==================== */
+.image-cropper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  margin: -24px;
+  padding: 16px;
+  background: #1a1a1a;
+  border-radius: 12px;
+}
+.image-cropper-title {
+  font-size: 1.1em;
+  font-weight: 600;
+  color: #fff;
+}
+.image-cropper-container {
+  position: relative;
+  display: inline-block;
+  user-select: none;
+  border-radius: 0;
+  overflow: hidden;
+  background: transparent;
+}
+.image-cropper-img {
+  display: block;
+}
+.image-cropper-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  pointer-events: none;
+}
+.image-cropper-box {
+  position: absolute;
+  border: 2px solid var(--accent);
+  cursor: move;
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0);
+}
+.crop-handle {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  background: var(--accent);
+  border: 2px solid #fff;
+  border-radius: 50%;
+}
+.crop-handle-nw { top: -6px; left: -6px; cursor: nw-resize; }
+.crop-handle-ne { top: -6px; right: -6px; cursor: ne-resize; }
+.crop-handle-sw { bottom: -6px; left: -6px; cursor: sw-resize; }
+.crop-handle-se { bottom: -6px; right: -6px; cursor: se-resize; }
+.image-cropper-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+
+.archivex-field-name-input {
+  margin-top: 8px;
+  padding: 8px;
+  background: var(--bg-secondary, #f5f5f5);
+  border-radius: var(--radius, 6px);
+}
+.archivex-field-name-input .modal-input {
+  margin-bottom: 0;
+}

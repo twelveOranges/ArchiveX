@@ -1,8 +1,14 @@
 node_modules/
-main.js
-main.js.map
+dist/
 *.log
 .DS_Store
-release/
-web/data/
-web/node_modules/
+
+# Build outputs
+packages/obsidian/main.js
+packages/obsidian/main.js.map
+packages/obsidian/release/
+packages/web/dist/
+packages/core/dist/
+
+# Data directories (user data, not committed)
+data/
