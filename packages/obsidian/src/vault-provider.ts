@@ -5,6 +5,7 @@ import { parseYamlDatabase, toSafeAssetName, hashBufferBrowser } from "@archivex
 import type { App as ObsidianApp } from "obsidian";
 
 const ARCHIVE_X_DIR = "archive-x";
+const TRASH_DIR = `${ARCHIVE_X_DIR}/.trash`;
 
 /**
  * VaultDataProvider - implements DataProvider via Obsidian Vault API.
@@ -147,13 +148,22 @@ export class VaultDataProvider implements DataProvider {
   }
 
   async deleteDatabase(name: string): Promise<void> {
+    const timestamp = Date.now();
+    await this.ensureDir(TRASH_DIR);
+
+    // Move yaml file to trash
     const filePath = `${ARCHIVE_X_DIR}/${name}.yaml`;
     const file = this.app.vault.getAbstractFileByPath(filePath);
-    if (file) await this.app.vault.delete(file);
+    if (file) {
+      await this.app.vault.rename(file, `${TRASH_DIR}/${timestamp}_${name}.yaml`);
+    }
 
+    // Move assets directory to trash
     const assetsDir = `${ARCHIVE_X_DIR}/${toSafeAssetName(name)}_assets`;
     const dir = this.app.vault.getAbstractFileByPath(assetsDir);
-    if (dir) await this.app.vault.delete(dir, true);
+    if (dir) {
+      await this.app.vault.rename(dir, `${TRASH_DIR}/${timestamp}_${toSafeAssetName(name)}_assets`);
+    }
   }
 
   async addRecord(dbName: string, record: DatabaseRecord): Promise<void> {
@@ -172,6 +182,10 @@ export class VaultDataProvider implements DataProvider {
   async deleteRecord(dbName: string, index: number): Promise<void> {
     const db = await this.getDatabase(dbName);
     if (index < 0 || index >= db.records.length) throw new Error("Record not found");
+
+    // Move record and its assets to trash
+    await this.trashRecord(dbName, db.records[index], db.schema);
+
     db.records.splice(index, 1);
     await this.saveDatabase(dbName, db);
   }
@@ -226,6 +240,14 @@ export class VaultDataProvider implements DataProvider {
 
   async deleteRecords(dbName: string, indices: number[]): Promise<void> {
     const db = await this.getDatabase(dbName);
+
+    // Trash each record before removing
+    for (const idx of indices) {
+      if (idx >= 0 && idx < db.records.length) {
+        await this.trashRecord(dbName, db.records[idx], db.schema);
+      }
+    }
+
     const sorted = [...indices].sort((a, b) => b - a);
     for (const idx of sorted) {
       if (idx >= 0 && idx < db.records.length) {
@@ -402,6 +424,41 @@ export class VaultDataProvider implements DataProvider {
       const file = this.app.vault.getAbstractFileByPath(fullPath);
       if (file) {
         await this.app.vault.delete(file);
+      }
+    }
+  }
+
+  /**
+   * Move a record's assets to .trash and save a mini yaml for recovery.
+   */
+  private async trashRecord(dbName: string, record: DatabaseRecord, schema: Database["schema"]): Promise<void> {
+    const timestamp = Date.now();
+    const trashDbDir = `${TRASH_DIR}/${dbName}_${timestamp}`;
+    await this.ensureDir(trashDbDir);
+
+    // Save a mini yaml with just this record
+    const miniDb = { schema, records: [record] };
+    const yamlContent = stringify(miniDb);
+    await this.app.vault.create(`${trashDbDir}/${dbName}.yaml`, yamlContent);
+
+    // Copy referenced asset files to trash
+    const assetsTrashDir = `${trashDbDir}/${toSafeAssetName(dbName)}_assets`;
+    for (const field of schema.fields) {
+      if (field.type === "image" || field.type === "video" || field.type === "audio" || field.type === "file") {
+        const value = record[field.name];
+        if (!value) continue;
+        const paths = Array.isArray(value) ? (value as string[]) : [value as string];
+        for (const p of paths) {
+          if (!p) continue;
+          const fullPath = `${ARCHIVE_X_DIR}/${String(p)}`;
+          const file = this.app.vault.getAbstractFileByPath(fullPath);
+          if (file && file instanceof TFile) {
+            await this.ensureDir(assetsTrashDir);
+            const buffer = await this.app.vault.readBinary(file);
+            const fileName = file.name;
+            await this.app.vault.createBinary(`${assetsTrashDir}/${fileName}`, buffer);
+          }
+        }
       }
     }
   }

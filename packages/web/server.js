@@ -20,6 +20,55 @@ if (!fs.existsSync(DATA_DIR)) {
   fs.mkdirSync(DATA_DIR, { recursive: true });
 }
 
+// Ensure .trash directory exists
+const TRASH_DIR = path.join(DATA_DIR, ".trash");
+if (!fs.existsSync(TRASH_DIR)) {
+  fs.mkdirSync(TRASH_DIR, { recursive: true });
+}
+
+// Move file/directory to trash with timestamp to avoid conflicts
+function moveToTrash(srcPath, destName) {
+  const timestamp = Date.now();
+  const trashPath = path.join(TRASH_DIR, `${timestamp}_${destName}`);
+  if (fs.existsSync(srcPath)) {
+    fs.renameSync(srcPath, trashPath);
+  }
+  return trashPath;
+}
+
+// Move a record's assets to trash and save a mini yaml for recovery
+function trashRecord(dbName, record, schema) {
+  const timestamp = Date.now();
+  const trashDbDir = path.join(TRASH_DIR, `${dbName}_${timestamp}`);
+  fs.mkdirSync(trashDbDir, { recursive: true });
+
+  // Save a mini yaml with just this record
+  const miniDb = { schema, records: [record] };
+  const yamlContent = yaml.stringify(miniDb);
+  fs.writeFileSync(path.join(trashDbDir, `${dbName}.yaml`), yamlContent, "utf-8");
+
+  // Move referenced asset files to trash
+  const assetsTrashDir = path.join(trashDbDir, `${toSafeAssetName(dbName)}_assets`);
+  for (const field of schema.fields) {
+    if (field.type === "image" || field.type === "video" || field.type === "audio" || field.type === "file") {
+      const value = record[field.name];
+      if (!value) continue;
+      const paths = Array.isArray(value) ? value : [value];
+      for (const p of paths) {
+        if (!p) continue;
+        const fullPath = path.join(DATA_DIR, String(p));
+        if (fs.existsSync(fullPath)) {
+          if (!fs.existsSync(assetsTrashDir)) {
+            fs.mkdirSync(assetsTrashDir, { recursive: true });
+          }
+          const fileName = path.basename(String(p));
+          fs.copyFileSync(fullPath, path.join(assetsTrashDir, fileName));
+        }
+      }
+    }
+  }
+}
+
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -251,7 +300,7 @@ app.put("/api/databases/:name", (req, res) => {
   }
 });
 
-// Delete a database
+// Delete a database (move to .trash)
 app.delete("/api/databases/:name", (req, res) => {
   const filename = `${req.params.name}.yaml`;
   const filePath = path.join(DATA_DIR, filename);
@@ -259,11 +308,13 @@ app.delete("/api/databases/:name", (req, res) => {
     return res.status(404).json({ error: "Database not found" });
   }
 
-  fs.unlinkSync(filePath);
+  // Move yaml file to trash
+  moveToTrash(filePath, filename);
 
+  // Move assets directory to trash
   const assetsDir = path.join(DATA_DIR, `${toSafeAssetName(req.params.name)}_assets`);
   if (fs.existsSync(assetsDir)) {
-    fs.rmSync(assetsDir, { recursive: true, force: true });
+    moveToTrash(assetsDir, `${toSafeAssetName(req.params.name)}_assets`);
   }
 
   res.json({ success: true });
@@ -297,7 +348,7 @@ app.put("/api/databases/:name/records/:index", (req, res) => {
   res.json(db.records[index]);
 });
 
-// Batch delete records
+// Batch delete records (move to .trash)
 app.post("/api/databases/:name/records/batch-delete", (req, res) => {
   const filename = `${req.params.name}.yaml`;
   const db = readDatabase(filename);
@@ -306,6 +357,13 @@ app.post("/api/databases/:name/records/batch-delete", (req, res) => {
   const { indices } = req.body;
   if (!Array.isArray(indices) || indices.length === 0) {
     return res.status(400).json({ error: "indices array is required" });
+  }
+
+  // Trash each record before removing
+  for (const idx of indices) {
+    if (idx >= 0 && idx < db.records.length) {
+      trashRecord(req.params.name, db.records[idx], db.schema);
+    }
   }
 
   // Sort indices in descending order to remove from end first
@@ -371,7 +429,7 @@ app.post("/api/databases/:name/records/merge", (req, res) => {
   res.json({ success: true, record: merged });
 });
 
-// Delete a record
+// Delete a record (move to .trash)
 app.delete("/api/databases/:name/records/:index", (req, res) => {
   const filename = `${req.params.name}.yaml`;
   const db = readDatabase(filename);
@@ -381,6 +439,9 @@ app.delete("/api/databases/:name/records/:index", (req, res) => {
   if (index < 0 || index >= db.records.length) {
     return res.status(404).json({ error: "Record not found" });
   }
+
+  // Move record and its assets to trash
+  trashRecord(req.params.name, db.records[index], db.schema);
 
   db.records.splice(index, 1);
   saveDatabase(filename, db);

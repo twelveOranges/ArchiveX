@@ -2,24 +2,14 @@ FROM node:26.3.0-alpine
 
 WORKDIR /app
 
-# Install pnpm and tar
-RUN npm install -g pnpm && apk add --no-cache tar
+# Install pnpm, tar and git
+RUN npm install -g pnpm && apk add --no-cache tar git
 
-# Copy workspace config
-COPY pnpm-workspace.yaml pnpm-lock.yaml package.json .npmrc ./
+# Clone source code from git
+RUN git clone https://gitee.com/zhangbo97/ArchiveX.git .
 
-# Copy package.json files for all packages
-COPY packages/core/package.json ./packages/core/
-COPY packages/ui/package.json ./packages/ui/
-COPY packages/web/package.json ./packages/web/
-
-# Install dependencies
-RUN pnpm install --frozen-lockfile || pnpm install
-
-# Copy source code
-COPY packages/core/ ./packages/core/
-COPY packages/ui/ ./packages/ui/
-COPY packages/web/ ./packages/web/
+# Install dependencies (ignore build scripts to avoid approval prompt)
+RUN pnpm install --frozen-lockfile --ignore-scripts || pnpm install --ignore-scripts
 
 # Build
 RUN pnpm --filter @archivex/core build && pnpm --filter @archivex/web build
