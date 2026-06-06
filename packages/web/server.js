@@ -515,14 +515,16 @@ app.post("/api/restore", restoreUpload.single("backup"), (req, res) => {
   if (!req.file) return res.status(400).json({ error: "No backup file provided" });
   try {
     const listing = execSync(`tar -tzf "${req.file.path}"`, { timeout: 30000 }).toString();
-    const hasArchiveXDir = listing.split("\n").some((l) => l.startsWith("archive-x/"));
+    const hasArchiveXDir = listing.split("\n").some((l) => l.startsWith("archive-x/") || l.startsWith(".archive-x/"));
 
     if (hasArchiveXDir) {
       const tmpExtract = path.join("/tmp", `archivex_restore_${Date.now()}`);
       fs.mkdirSync(tmpExtract, { recursive: true });
       execSync(`tar -xzf "${req.file.path}" -C "${tmpExtract}"`, { timeout: 60000 });
 
-      const extractedDir = path.join(tmpExtract, "archive-x");
+      const extractedDir = fs.existsSync(path.join(tmpExtract, ".archive-x"))
+        ? path.join(tmpExtract, ".archive-x")
+        : path.join(tmpExtract, "archive-x");
       if (fs.existsSync(extractedDir)) {
         execSync(`cp -rf "${extractedDir}/"* "${DATA_DIR}/" 2>/dev/null || true`, { timeout: 60000 });
         execSync(`cp -rf "${extractedDir}"/.[!.]* "${DATA_DIR}/" 2>/dev/null || true`, { timeout: 60000 });

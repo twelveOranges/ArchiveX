@@ -207,16 +207,13 @@ class ArchiveXSettingTab extends PluginSettingTab {
 
       if (isImage) {
         const vaultPath = `.archive-x/${file.path}`;
-        const imgFile = this.app.vault.getAbstractFileByPath(vaultPath);
-        if (imgFile) {
-          const thumb = label.createEl("img");
-          thumb.style.width = "40px";
-          thumb.style.height = "40px";
-          thumb.style.objectFit = "cover";
-          thumb.style.borderRadius = "4px";
-          thumb.style.flexShrink = "0";
-          thumb.src = this.app.vault.getResourcePath(imgFile as any);
-        }
+        const thumb = label.createEl("img");
+        thumb.style.width = "40px";
+        thumb.style.height = "40px";
+        thumb.style.objectFit = "cover";
+        thumb.style.borderRadius = "4px";
+        thumb.style.flexShrink = "0";
+        thumb.src = this.app.vault.adapter.getResourcePath(vaultPath);
       }
 
       const pathSpan = label.createEl("span", { text: file.path });

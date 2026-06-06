@@ -333,6 +333,8 @@
   transition: box-shadow 0.2s ease, transform 0.2s ease;
   position: relative;
   cursor: pointer;
+  display: flex;
+  flex-direction: column;
 }
 
 .archivex-card:hover {
@@ -807,6 +809,37 @@
   gap: 8px;
 }
 
+/* Add record card */
+.archivex-card.archivex-add-card {
+  border-style: dashed;
+  border-width: 2px;
+  align-items: center;
+  justify-content: center;
+}
+
+.archivex-card.archivex-add-card:hover {
+  border-color: var(--interactive-accent);
+  background: var(--background-secondary);
+}
+
+.archivex-add-card-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 1 / 1;
+  width: 100%;
+  gap: 6px;
+}
+
+.archivex-add-card-content .archivex-db-card-create-icon {
+  font-size: 2em;
+}
+
+.archivex-add-card-content .archivex-db-card-create-text {
+  font-size: 0.75em;
+}
+
 .archivex-db-card-create:hover {
   border-color: var(--interactive-accent);
   background: var(--background-secondary);
@@ -904,6 +937,96 @@
   margin-top: 20px;
   padding-top: 16px;
   border-top: 1px solid var(--background-modifier-border);
+}
+
+.archivex-modal-wrapper .modal-group {
+  margin-bottom: 16px;
+}
+
+.archivex-modal-wrapper .modal-label {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 600;
+  font-size: 0.9em;
+  color: var(--text-normal);
+}
+
+.archivex-modal-wrapper .modal-input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 6px;
+  background: var(--background-primary);
+  color: var(--text-normal);
+  font-size: 0.9em;
+  font-family: inherit;
+  box-sizing: border-box;
+  outline: none;
+}
+
+.archivex-modal-wrapper .modal-input:focus {
+  border-color: var(--interactive-accent);
+  box-shadow: 0 0 0 2px rgba(var(--interactive-accent-rgb), 0.2);
+}
+
+.archivex-modal-wrapper .media-field-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.archivex-modal-wrapper .archivex-media-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.archivex-modal-wrapper .archivex-media-list-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 6px;
+  background: var(--background-secondary);
+  font-size: 0.85em;
+}
+
+.archivex-modal-wrapper .archivex-media-list-thumb {
+  width: 32px;
+  height: 32px;
+  object-fit: cover;
+  border-radius: 4px;
+}
+
+.archivex-modal-wrapper .archivex-media-list-remove {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 1.1em;
+  padding: 0 2px;
+  line-height: 1;
+}
+
+.archivex-modal-wrapper .archivex-media-list-remove:hover {
+  color: var(--text-error);
+}
+
+.archivex-modal-wrapper .archivex-media-select-btn {
+  padding: 6px 12px;
+  border: 1px dashed var(--background-modifier-border);
+  border-radius: 6px;
+  background: var(--background-secondary);
+  color: var(--text-normal);
+  cursor: pointer;
+  font-size: 0.85em;
+  transition: all 0.15s;
+}
+
+.archivex-modal-wrapper .archivex-media-select-btn:hover {
+  border-color: var(--interactive-accent);
+  background: var(--background-primary);
 }
 
 .archivex-modal-wrapper .preview-header {
@@ -1087,11 +1210,20 @@
   display: flex;
   gap: 4px;
   opacity: 0;
+  pointer-events: none;
   transition: opacity 0.15s ease;
 }
 
 .archivex-field-row:hover .archivex-field-row-actions {
   opacity: 1;
+  pointer-events: auto;
+}
+
+@media (hover: none) {
+  .archivex-field-row-actions {
+    opacity: 1;
+    pointer-events: auto;
+  }
 }
 
 .archivex-field-action-btn {
@@ -1213,12 +1345,23 @@
   display: flex;
   gap: 4px;
   opacity: 0;
+  pointer-events: none;
   transition: opacity 0.15s ease;
   z-index: 10;
 }
 
 .archivex-db-card:hover .archivex-db-card-actions {
   opacity: 1;
+  pointer-events: auto;
+}
+
+/* Mobile: show actions on long-press (active state) */
+@media (hover: none) {
+  .archivex-db-card:active .archivex-db-card-actions,
+  .archivex-db-card.show-actions .archivex-db-card-actions {
+    opacity: 1;
+    pointer-events: auto;
+  }
 }
 
 .archivex-db-card-action-btn {

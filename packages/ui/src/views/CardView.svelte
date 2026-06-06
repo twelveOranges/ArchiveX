@@ -1,13 +1,15 @@
 <script lang="ts">
   import { dataProvider } from "../stores";
   import type { Database, DatabaseRecord } from "@archivex/core";
+  import Icon from "../components/Icon.svelte";
 
   export let database: Database & { name: string };
   export let sortedRecords: { record: DatabaseRecord; originalIndex: number }[];
   export let cardSize: number;
   export let onRecordClick: (record: DatabaseRecord, index: number) => void;
   export let onAddClick: () => void;
-  export let openLightbox: (images: string[], index: number) => void;
+  // @ts-ignore - openLightbox reserved for future use
+  export let openLightbox: ((images: string[], index: number) => void) | undefined = undefined;
   export let multiSelect: boolean = false;
   export let selectedIndices: Set<number> = new Set();
   export let onToggleSelect: (index: number) => void = () => {};
@@ -49,9 +51,11 @@
       tabindex="0"
     >
       {#if multiSelect}
+        <!-- svelte-ignore a11y-click-events-have-key-events -->
+        <!-- svelte-ignore a11y-no-static-element-interactions -->
         <div class="archivex-card-checkbox" on:click|stopPropagation={() => onToggleSelect(originalIndex)}>
           {#if selectedIndices.has(originalIndex)}
-            <span class="archivex-checkbox-checked">✓</span>
+            <span class="archivex-checkbox-checked"><Icon name="check" size={12} /></span>
           {:else}
             <span class="archivex-checkbox-unchecked"></span>
           {/if}
@@ -61,7 +65,7 @@
         {#if getCoverImage(record)}
           <img src={getCoverImage(record)} alt="" on:error={(e) => { e.currentTarget.style.display = 'none'; }} />
         {:else}
-          <div class="archivex-card-cover-placeholder">📄</div>
+          <div class="archivex-card-cover-placeholder"><Icon name="file" size={24} /></div>
         {/if}
       </div>
       <div class="archivex-card-body">

@@ -1,48 +1,53 @@
-import { TFile, TFolder } from "obsidian";
 import { stringify } from "yaml";
 import type { DataProvider, DatabaseInfo, Database, FieldDefinition, DatabaseRecord, UploadResult, ServerConfig, RebuildResult } from "@archivex/core";
 import { parseYamlDatabase, toSafeAssetName, hashBufferBrowser } from "@archivex/core";
-import type { App as ObsidianApp } from "obsidian";
+import type { App as ObsidianApp, DataAdapter } from "obsidian";
 
-const ARCHIVE_X_DIR = "archive-x";
+const ARCHIVE_X_DIR = ".archive-x";
 const TRASH_DIR = `${ARCHIVE_X_DIR}/.trash`;
 
 /**
- * VaultDataProvider - implements DataProvider via Obsidian Vault API.
+ * VaultDataProvider - implements DataProvider via Obsidian Vault Adapter API.
+ * Uses adapter (filesystem-level) instead of Vault API to support hidden folders.
  */
 export class VaultDataProvider implements DataProvider {
   private app: ObsidianApp;
+  private adapter: DataAdapter;
 
   constructor(app: ObsidianApp) {
     this.app = app;
+    this.adapter = app.vault.adapter;
   }
 
   private async ensureDir(dirPath: string) {
-    const dir = this.app.vault.getAbstractFileByPath(dirPath);
-    if (!dir) {
-      await this.app.vault.createFolder(dirPath);
+    const exists = await this.adapter.exists(dirPath);
+    if (!exists) {
+      await this.adapter.mkdir(dirPath);
     }
   }
 
-  private getYamlFiles(): TFile[] {
-    const dir = this.app.vault.getAbstractFileByPath(ARCHIVE_X_DIR);
-    if (!dir || !(dir instanceof TFolder)) return [];
-    return dir.children.filter(
-      (f) => f instanceof TFile && (f.extension === "yaml" || f.extension === "yml")
-    ) as TFile[];
+  private async getYamlFiles(): Promise<string[]> {
+    const exists = await this.adapter.exists(ARCHIVE_X_DIR);
+    if (!exists) return [];
+    const listing = await this.adapter.list(ARCHIVE_X_DIR);
+    return listing.files.filter(
+      (f) => f.endsWith(".yaml") || f.endsWith(".yml")
+    );
   }
 
   async listDatabases(): Promise<DatabaseInfo[]> {
     await this.ensureDir(ARCHIVE_X_DIR);
-    const files = this.getYamlFiles();
+    const files = await this.getYamlFiles();
     const databases: DatabaseInfo[] = [];
 
-    for (const file of files) {
-      const content = await this.app.vault.read(file);
+    for (const filePath of files) {
+      const content = await this.adapter.read(filePath);
       const db = parseYamlDatabase(content);
+      const filename = filePath.split("/").pop() || "";
+      const name = filename.replace(/\.(yaml|yml)$/, "");
       databases.push({
-        filename: file.name,
-        name: file.basename,
+        filename,
+        name,
         recordCount: db ? db.records.length : 0,
         fieldCount: db ? db.schema.fields.length : 0,
       });
@@ -53,11 +58,11 @@ export class VaultDataProvider implements DataProvider {
 
   async getDatabase(name: string): Promise<Database & { name: string }> {
     const filePath = `${ARCHIVE_X_DIR}/${name}.yaml`;
-    const file = this.app.vault.getAbstractFileByPath(filePath);
-    if (!file || !(file instanceof TFile)) {
+    const exists = await this.adapter.exists(filePath);
+    if (!exists) {
       throw new Error(`Database not found: ${name}`);
     }
-    const content = await this.app.vault.read(file);
+    const content = await this.adapter.read(filePath);
     const db = parseYamlDatabase(content);
     if (!db) throw new Error("Failed to parse database");
     return { name, ...db };
@@ -66,19 +71,14 @@ export class VaultDataProvider implements DataProvider {
   private async saveDatabase(name: string, db: Database) {
     const filePath = `${ARCHIVE_X_DIR}/${name}.yaml`;
     const content = stringify({ schema: db.schema, records: db.records });
-    const file = this.app.vault.getAbstractFileByPath(filePath);
-    if (file && file instanceof TFile) {
-      await this.app.vault.modify(file, content);
-    } else {
-      await this.app.vault.create(filePath, content);
-    }
+    await this.adapter.write(filePath, content);
   }
 
   async createDatabase(name: string, fields: FieldDefinition[]): Promise<void> {
     await this.ensureDir(ARCHIVE_X_DIR);
     const filePath = `${ARCHIVE_X_DIR}/${name}.yaml`;
-    const existing = this.app.vault.getAbstractFileByPath(filePath);
-    if (existing) throw new Error("Database already exists");
+    const exists = await this.adapter.exists(filePath);
+    if (exists) throw new Error("Database already exists");
 
     const database: Database = { schema: { fields }, records: [] };
     await this.saveDatabase(name, database);
@@ -134,13 +134,14 @@ export class VaultDataProvider implements DataProvider {
       await this.saveDatabase(newName, db);
 
       // Delete old file
-      const oldFile = this.app.vault.getAbstractFileByPath(`${ARCHIVE_X_DIR}/${name}.yaml`);
-      if (oldFile) await this.app.vault.delete(oldFile);
+      const oldFilePath = `${ARCHIVE_X_DIR}/${name}.yaml`;
+      if (await this.adapter.exists(oldFilePath)) {
+        await this.adapter.remove(oldFilePath);
+      }
 
       // Rename assets folder
-      const oldDir = this.app.vault.getAbstractFileByPath(oldAssetsDir);
-      if (oldDir) {
-        await this.app.vault.rename(oldDir, newAssetsDir);
+      if (await this.adapter.exists(oldAssetsDir)) {
+        await this.adapter.rename(oldAssetsDir, newAssetsDir);
       }
     } else {
       await this.saveDatabase(name, db);
@@ -153,16 +154,18 @@ export class VaultDataProvider implements DataProvider {
 
     // Move yaml file to trash
     const filePath = `${ARCHIVE_X_DIR}/${name}.yaml`;
-    const file = this.app.vault.getAbstractFileByPath(filePath);
-    if (file) {
-      await this.app.vault.rename(file, `${TRASH_DIR}/${timestamp}_${name}.yaml`);
+    if (await this.adapter.exists(filePath)) {
+      const content = await this.adapter.read(filePath);
+      await this.adapter.write(`${TRASH_DIR}/${timestamp}_${name}.yaml`, content);
+      await this.adapter.remove(filePath);
     }
 
     // Move assets directory to trash
     const assetsDir = `${ARCHIVE_X_DIR}/${toSafeAssetName(name)}_assets`;
-    const dir = this.app.vault.getAbstractFileByPath(assetsDir);
-    if (dir) {
-      await this.app.vault.rename(dir, `${TRASH_DIR}/${timestamp}_${toSafeAssetName(name)}_assets`);
+    if (await this.adapter.exists(assetsDir)) {
+      const trashAssetsDir = `${TRASH_DIR}/${timestamp}_${toSafeAssetName(name)}_assets`;
+      await this.copyDir(assetsDir, trashAssetsDir);
+      await this.removeDir(assetsDir);
     }
   }
 
@@ -198,9 +201,9 @@ export class VaultDataProvider implements DataProvider {
     await this.ensureDir(assetsDir);
 
     const filePath = `${assetsDir}/${hash}`;
-    const existing = this.app.vault.getAbstractFileByPath(filePath);
-    if (!existing) {
-      await this.app.vault.createBinary(filePath, buffer);
+    const exists = await this.adapter.exists(filePath);
+    if (!exists) {
+      await this.adapter.writeBinary(filePath, buffer);
     }
 
     return {
@@ -215,9 +218,9 @@ export class VaultDataProvider implements DataProvider {
   getAssetUrl(relativePath: string): string {
     if (!relativePath) return "";
     if (relativePath.startsWith("http")) return relativePath;
-    // Use Obsidian's resource path
+    // Use adapter's resource path for hidden folder files
     const fullPath = `${ARCHIVE_X_DIR}/${relativePath}`;
-    return this.app.vault.adapter.getResourcePath(fullPath);
+    return this.adapter.getResourcePath(fullPath);
   }
 
   getBackupUrl(): string {
@@ -226,12 +229,11 @@ export class VaultDataProvider implements DataProvider {
   }
 
   async restore(_file: File): Promise<void> {
-    // For Obsidian, restore would need to use the vault API
     throw new Error("Restore is not supported in Obsidian plugin. Use the settings tab backup/restore instead.");
   }
 
   async getConfig(): Promise<ServerConfig> {
-    const vaultPath = (this.app.vault.adapter as any).getBasePath?.() || "Obsidian Vault";
+    const vaultPath = (this.adapter as any).getBasePath?.() || "Obsidian Vault";
     return {
       dataDir: `${vaultPath}/${ARCHIVE_X_DIR}`,
       port: 0,
@@ -290,21 +292,22 @@ export class VaultDataProvider implements DataProvider {
 
   async rebuild(): Promise<RebuildResult> {
     await this.ensureDir(ARCHIVE_X_DIR);
-    const dir = this.app.vault.getAbstractFileByPath(ARCHIVE_X_DIR);
-    if (!dir || !(dir instanceof TFolder)) {
+    const exists = await this.adapter.exists(ARCHIVE_X_DIR);
+    if (!exists) {
       return { rehashed: 0, totalFiles: 0, unreferencedFiles: [] };
     }
 
-    const yamlFiles = this.getYamlFiles();
+    const yamlFiles = await this.getYamlFiles();
     const referencedFiles = new Set<string>();
     let rehashed = 0;
 
-    for (const yamlFile of yamlFiles) {
-      const content = await this.app.vault.read(yamlFile);
+    for (const yamlFilePath of yamlFiles) {
+      const content = await this.adapter.read(yamlFilePath);
       const db = parseYamlDatabase(content);
       if (!db) continue;
 
-      const dbName = yamlFile.basename;
+      const filename = yamlFilePath.split("/").pop() || "";
+      const dbName = filename.replace(/\.(yaml|yml)$/, "");
       let modified = false;
 
       for (const record of db.records) {
@@ -321,22 +324,20 @@ export class VaultDataProvider implements DataProvider {
               referencedFiles.add(p);
 
               const fullPath = `${ARCHIVE_X_DIR}/${p}`;
-              const file = this.app.vault.getAbstractFileByPath(fullPath);
-              if (file && file instanceof TFile) {
-                const buffer = await this.app.vault.readBinary(file);
+              if (await this.adapter.exists(fullPath)) {
+                const buffer = await this.adapter.readBinary(fullPath);
                 const newHash = await hashBufferBrowser(buffer);
-                const fileName = file.name;
-                const dirName = file.parent?.path || "";
+                const fileName = p.split("/").pop() || "";
+                const dirPart = p.substring(0, p.lastIndexOf("/"));
 
                 if (fileName !== newHash) {
-                  const newFilePath = `${dirName}/${newHash}`;
-                  const existing = this.app.vault.getAbstractFileByPath(newFilePath);
-                  if (!existing) {
-                    await this.app.vault.rename(file, newFilePath);
+                  const newRelPath = `${dirPart}/${newHash}`;
+                  const newFullPath = `${ARCHIVE_X_DIR}/${newRelPath}`;
+                  if (!(await this.adapter.exists(newFullPath))) {
+                    await this.adapter.rename(fullPath, newFullPath);
                   } else {
-                    await this.app.vault.delete(file);
+                    await this.adapter.remove(fullPath);
                   }
-                  const newRelPath = `${toSafeAssetName(dbName)}_assets/${newHash}`;
                   newPaths.push(newRelPath);
                   referencedFiles.delete(p);
                   referencedFiles.add(newRelPath);
@@ -360,7 +361,8 @@ export class VaultDataProvider implements DataProvider {
       }
 
       if (modified) {
-        await this.saveDatabase(yamlFile.basename, db);
+        const saveName = filename.replace(/\.(yaml|yml)$/, "");
+        await this.saveDatabase(saveName, db);
       }
     }
 
@@ -368,20 +370,23 @@ export class VaultDataProvider implements DataProvider {
     const unreferencedFiles: { path: string; size: number; type: "image" | "video" | "file" }[] = [];
     let totalFiles = 0;
 
-    for (const child of dir.children) {
-      if (child instanceof TFolder && child.name.endsWith("_assets")) {
-        for (const file of child.children) {
-          if (file instanceof TFile) {
-            totalFiles++;
-            const relativePath = `${child.name}/${file.name}`;
-            if (!referencedFiles.has(relativePath)) {
-              const fileType = await this.detectFileType(file);
-              unreferencedFiles.push({
-                path: relativePath,
-                size: file.stat.size,
-                type: fileType,
-              });
-            }
+    const listing = await this.adapter.list(ARCHIVE_X_DIR);
+    for (const folder of listing.folders) {
+      const folderName = folder.split("/").pop() || "";
+      if (folderName.endsWith("_assets")) {
+        const assetListing = await this.adapter.list(folder);
+        for (const filePath of assetListing.files) {
+          totalFiles++;
+          const fileName = filePath.split("/").pop() || "";
+          const relativePath = `${folderName}/${fileName}`;
+          if (!referencedFiles.has(relativePath)) {
+            const fileType = await this.detectFileType(filePath);
+            const stat = await this.adapter.stat(filePath);
+            unreferencedFiles.push({
+              path: relativePath,
+              size: stat?.size || 0,
+              type: fileType,
+            });
           }
         }
       }
@@ -390,9 +395,9 @@ export class VaultDataProvider implements DataProvider {
     return { rehashed, totalFiles, unreferencedFiles };
   }
 
-  private async detectFileType(file: TFile): Promise<"image" | "video" | "file"> {
+  private async detectFileType(filePath: string): Promise<"image" | "video" | "file"> {
     try {
-      const buffer = await this.app.vault.readBinary(file);
+      const buffer = await this.adapter.readBinary(filePath);
       const bytes = new Uint8Array(buffer, 0, Math.min(12, buffer.byteLength));
 
       // Image signatures
@@ -421,9 +426,8 @@ export class VaultDataProvider implements DataProvider {
   async cleanupFiles(files: string[]): Promise<void> {
     for (const relativePath of files) {
       const fullPath = `${ARCHIVE_X_DIR}/${relativePath}`;
-      const file = this.app.vault.getAbstractFileByPath(fullPath);
-      if (file) {
-        await this.app.vault.delete(file);
+      if (await this.adapter.exists(fullPath)) {
+        await this.adapter.remove(fullPath);
       }
     }
   }
@@ -439,7 +443,7 @@ export class VaultDataProvider implements DataProvider {
     // Save a mini yaml with just this record
     const miniDb = { schema, records: [record] };
     const yamlContent = stringify(miniDb);
-    await this.app.vault.create(`${trashDbDir}/${dbName}.yaml`, yamlContent);
+    await this.adapter.write(`${trashDbDir}/${dbName}.yaml`, yamlContent);
 
     // Copy referenced asset files to trash
     const assetsTrashDir = `${trashDbDir}/${toSafeAssetName(dbName)}_assets`;
@@ -451,15 +455,45 @@ export class VaultDataProvider implements DataProvider {
         for (const p of paths) {
           if (!p) continue;
           const fullPath = `${ARCHIVE_X_DIR}/${String(p)}`;
-          const file = this.app.vault.getAbstractFileByPath(fullPath);
-          if (file && file instanceof TFile) {
+          if (await this.adapter.exists(fullPath)) {
             await this.ensureDir(assetsTrashDir);
-            const buffer = await this.app.vault.readBinary(file);
-            const fileName = file.name;
-            await this.app.vault.createBinary(`${assetsTrashDir}/${fileName}`, buffer);
+            const buffer = await this.adapter.readBinary(fullPath);
+            const fileName = String(p).split("/").pop() || "";
+            await this.adapter.writeBinary(`${assetsTrashDir}/${fileName}`, buffer);
           }
         }
       }
     }
+  }
+
+  /**
+   * Recursively copy a directory.
+   */
+  private async copyDir(src: string, dest: string): Promise<void> {
+    await this.ensureDir(dest);
+    const listing = await this.adapter.list(src);
+    for (const file of listing.files) {
+      const fileName = file.split("/").pop() || "";
+      const buffer = await this.adapter.readBinary(file);
+      await this.adapter.writeBinary(`${dest}/${fileName}`, buffer);
+    }
+    for (const folder of listing.folders) {
+      const folderName = folder.split("/").pop() || "";
+      await this.copyDir(folder, `${dest}/${folderName}`);
+    }
+  }
+
+  /**
+   * Recursively remove a directory.
+   */
+  private async removeDir(dirPath: string): Promise<void> {
+    const listing = await this.adapter.list(dirPath);
+    for (const file of listing.files) {
+      await this.adapter.remove(file);
+    }
+    for (const folder of listing.folders) {
+      await this.removeDir(folder);
+    }
+    await this.adapter.rmdir(dirPath, false);
   }
 }

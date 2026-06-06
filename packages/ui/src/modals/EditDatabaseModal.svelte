@@ -2,6 +2,7 @@
   import { dataProvider } from "../stores";
   import { FIELD_TYPES, getFieldIcon } from "@archivex/core";
   import type { FieldDefinition, FieldType } from "@archivex/core";
+  import Icon from "../components/Icon.svelte";
 
   export let closeModal: () => void;
   export let dbName: string;
@@ -117,15 +118,15 @@
   <p>Loading...</p>
 {:else}
   <div class="modal-group">
-    <label class="modal-label">Database Name</label>
-    <input type="text" class="modal-input" bind:value={newName} />
+    <label class="modal-label" for="edit-db-name">Database Name</label>
+    <input type="text" id="edit-db-name" class="modal-input" bind:value={newName} />
   </div>
   <div class="modal-group">
-    <label class="modal-label">Fields</label>
+    <span class="modal-label">Fields</span>
     <div class="archivex-field-list">
       {#each fields as field, i}
         <div class="archivex-field-row">
-          <span class="archivex-field-row-icon">{getFieldIcon(field.type)}</span>
+          <span class="archivex-field-row-icon"><Icon name={getFieldIcon(field.type)} size={14} /></span>
           {#if renamingIndex === i}
             <input
               type="text"
@@ -139,7 +140,7 @@
           {/if}
           <span class="archivex-field-row-type">{field.type}</span>
           <div class="archivex-field-row-actions">
-            <button class="archivex-field-action-btn archivex-field-delete-btn" on:click={() => removeField(i)}>✕</button>
+            <button class="archivex-field-action-btn archivex-field-delete-btn" on:click={() => removeField(i)}><Icon name="x" size={12} /></button>
           </div>
         </div>
       {/each}
@@ -151,12 +152,14 @@
 
   {#if showAddFieldPopup}
     <div class="archivex-popup-overlay" on:click={cancelAddField} on:keypress={cancelAddField} role="button" tabindex="0">
+      <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
       <div class="archivex-popup" on:click|stopPropagation on:keypress|stopPropagation role="dialog">
         <div class="archivex-popup-title">Add Field</div>
         <div class="modal-group">
-          <label class="modal-label">Field Name</label>
+          <label class="modal-label" for="add-field-name">Field Name</label>
           <input
             type="text"
+            id="add-field-name"
             class="modal-input"
             bind:value={newFieldName}
             placeholder="Leave empty for default name..."
@@ -164,7 +167,7 @@
           />
         </div>
         <div class="modal-group">
-          <label class="modal-label">Field Type</label>
+          <span class="modal-label">Field Type</span>
           <div class="archivex-type-grid">
             {#each FIELD_TYPES as ft}
               <div
@@ -175,7 +178,7 @@
                 role="button"
                 tabindex="0"
               >
-                <span class="archivex-type-grid-icon">{ft.icon}</span>
+              <span class="archivex-type-grid-icon"><Icon name={ft.icon} size={16} /></span>
                 <span class="archivex-type-grid-label">{ft.label}</span>
               </div>
             {/each}

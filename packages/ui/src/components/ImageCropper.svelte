@@ -144,6 +144,12 @@
   }
 
   async function doCrop() {
+    // If crop covers the entire image, use original file without re-encoding
+    if (cropX === 0 && cropY === 0 && cropW === displayWidth && cropH === displayHeight) {
+      onCrop(imageFile);
+      return;
+    }
+
     // Calculate actual pixel coordinates
     const scaleX = imgWidth / displayWidth;
     const scaleY = imgHeight / displayHeight;
@@ -159,9 +165,10 @@
     const ctx = canvas.getContext("2d")!;
     ctx.drawImage(imgEl, sx, sy, sw, sh, 0, 0, sw, sh);
 
-    // Convert to blob
+    // Convert to blob - use original type and max quality (1.0) to avoid compression
+    const mimeType = imageFile.type || "image/png";
     const blob = await new Promise<Blob>((resolve) => {
-      canvas.toBlob((b) => resolve(b!), imageFile.type || "image/jpeg", 0.92);
+      canvas.toBlob((b) => resolve(b!), mimeType, 1.0);
     });
 
     const croppedFile = new File([blob], imageFile.name, { type: blob.type });

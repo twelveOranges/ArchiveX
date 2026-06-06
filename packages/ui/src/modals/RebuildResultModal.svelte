@@ -1,6 +1,7 @@
 <script lang="ts">
   import { dataProvider } from "../stores";
   import type { UnreferencedFile } from "@archivex/core";
+  import Icon from "../components/Icon.svelte";
 
   export let closeModal: () => void;
   export let unreferencedFiles: UnreferencedFile[];
@@ -67,24 +68,24 @@
       unreferencedFiles = unreferencedFiles.filter((f) => !selectedFiles.has(f.path));
       selectedFiles = new Set();
       selectAll = false;
-      statusMsg = `✅ Deleted successfully. ${unreferencedFiles.length} unreferenced file(s) remaining.`;
+      statusMsg = `Deleted successfully. ${unreferencedFiles.length} unreferenced file(s) remaining.`;
       if (unreferencedFiles.length === 0) {
         setTimeout(() => closeModal(), 1500);
       }
     } catch (e) {
-      statusMsg = "❌ Delete failed: " + (e as Error).message;
+      statusMsg = "Delete failed: " + (e as Error).message;
     }
     deleting = false;
   }
 </script>
 
-<div class="modal-title">🔄 Rebuild Results</div>
+<div class="modal-title"><Icon name="refresh" size={18} /> Rebuild Results</div>
 
 <div class="rebuild-modal-summary">
   {#if rehashed > 0}
-    <span>✅ Rehashed {rehashed} / {totalFiles} files.</span>
+    <span>Rehashed {rehashed} / {totalFiles} files.</span>
   {:else}
-    <span>✅ All {totalFiles} file hashes are correct.</span>
+    <span>All {totalFiles} file hashes are correct.</span>
   {/if}
   <span style="margin-left:8px">Found <strong>{unreferencedFiles.length}</strong> unreferenced file(s).</span>
 </div>
@@ -110,7 +111,7 @@
         on:click={handleDeleteFiles}
         disabled={selectedFiles.size === 0 || deleting}
       >
-        {deleting ? "Deleting..." : "🗑️ Delete Selected"}
+        {deleting ? "Deleting..." : "Delete Selected"}
       </button>
     </div>
   </div>
@@ -119,7 +120,7 @@
     <!-- Images section -->
     {#if imageFiles.length > 0}
       <div class="rebuild-section">
-        <h4 class="rebuild-section-title">🖼️ Images ({imageFiles.length})</h4>
+        <h4 class="rebuild-section-title"><Icon name="image" size={16} /> Images ({imageFiles.length})</h4>
         <div class="rebuild-thumb-grid">
           {#each imageFiles as file}
             <div
@@ -145,7 +146,7 @@
     <!-- Videos section -->
     {#if videoFiles.length > 0}
       <div class="rebuild-section">
-        <h4 class="rebuild-section-title">🎬 Videos ({videoFiles.length})</h4>
+        <h4 class="rebuild-section-title"><Icon name="video" size={16} /> Videos ({videoFiles.length})</h4>
         <div class="rebuild-thumb-grid">
           {#each videoFiles as file}
             <div
@@ -173,7 +174,7 @@
     <!-- Other files section -->
     {#if otherFiles.length > 0}
       <div class="rebuild-section">
-        <h4 class="rebuild-section-title">📎 Other Files ({otherFiles.length})</h4>
+        <h4 class="rebuild-section-title"><Icon name="file" size={16} /> Other Files ({otherFiles.length})</h4>
         <div class="rebuild-file-list-compact">
           {#each otherFiles as file}
             <div class="rebuild-file-row" class:selected={selectedFiles.has(file.path)}>
@@ -193,7 +194,7 @@
     {/if}
   </div>
 {:else}
-  <div class="rebuild-modal-empty">🎉 No unreferenced files found. Everything is clean!</div>
+  <div class="rebuild-modal-empty">No unreferenced files found. Everything is clean!</div>
 {/if}
 
 <div class="modal-actions">

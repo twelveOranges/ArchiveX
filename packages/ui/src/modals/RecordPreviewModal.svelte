@@ -1,6 +1,7 @@
 <script lang="ts">
   import { dataProvider } from "../stores";
   import type { Database, DatabaseRecord } from "@archivex/core";
+  import Icon from "../components/Icon.svelte";
 
   export let closeModal: () => void;
   export let database: Database & { name: string };
@@ -25,8 +26,8 @@
 <div class="preview-header">
   <div class="modal-title" style="margin:0">{getTitle()}</div>
   <div class="preview-actions">
-    <button class="archivex-btn" on:click={() => { closeModal(); onEdit(index); }}>✏️ Edit</button>
-    <button class="archivex-btn archivex-btn-danger" on:click={() => { onDelete(index); }}>🗑️ Delete</button>
+    <button class="archivex-btn" on:click={() => { closeModal(); onEdit(index); }}><Icon name="edit" size={14} /> Edit</button>
+    <button class="archivex-btn archivex-btn-danger" on:click={() => { onDelete(index); }}><Icon name="trash" size={14} /> Delete</button>
   </div>
 </div>
 <div class="preview-body">
@@ -40,6 +41,7 @@
             {#each (Array.isArray(record[field.name]) ? record[field.name] : [String(record[field.name])]) as path, pi}
               {#if path}
                 {@const allPaths = (Array.isArray(record[field.name]) ? record[field.name] : [String(record[field.name])]).filter(Boolean)}
+                <!-- svelte-ignore a11y-no-noninteractive-element-to-interactive-role -->
                 <img
                   class="preview-img"
                   src={getAssetUrl(String(path))}
@@ -77,7 +79,7 @@
             {/each}
           </div>
         {:else if field.type === "checkbox"}
-          <div class="preview-field-value">{record[field.name] ? "✅ Yes" : "❌ No"}</div>
+          <div class="preview-field-value">{record[field.name] ? "Yes" : "No"}</div>
         {:else if field.type === "url"}
           <div class="preview-field-value">
             <a href={String(record[field.name])} target="_blank" style="color:var(--accent)">{record[field.name]}</a>

@@ -1,6 +1,7 @@
 <script lang="ts">
   import { dataProvider } from "../stores";
   import type { Database, DatabaseRecord, FieldDefinition } from "@archivex/core";
+  import Icon from "../components/Icon.svelte";
 
   export let database: Database & { name: string };
   export let cardSize: number;
@@ -54,7 +55,7 @@
 
 {#if imageFields.length === 0}
   <div class="archivex-empty-state">
-    <div class="archivex-empty-icon">🖼️</div>
+    <div class="archivex-empty-icon"><Icon name="image" size={48} /></div>
     <p>No image fields in this database.</p>
   </div>
 {:else}

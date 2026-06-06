@@ -3,6 +3,7 @@
   import { getAcceptType } from "@archivex/core";
   import type { Database, DatabaseRecord, FieldDefinition } from "@archivex/core";
   import ImageCropper from "../components/ImageCropper.svelte";
+  import Icon from "../components/Icon.svelte";
 
   export let closeModal: () => void;
   export let database: Database & { name: string };
@@ -178,6 +179,7 @@
 
   {#each database.schema.fields as field}
     <div class="modal-group">
+      <!-- svelte-ignore a11y-label-has-associated-control -->
       <label class="modal-label">{field.label || field.name}</label>
 
       {#if field.type === "text" || field.type === "url" || field.type === "select"}
@@ -209,7 +211,7 @@
                 {#if field.type === "image"}
                   <img class="archivex-media-list-thumb" src={getAssetUrl(path)} alt="" />
                 {:else}
-                  <span>📎</span>
+                <span><Icon name="file" size={14} /></span>
                 {/if}
                 <span style="max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:0.8em">
                   {path.split("/").pop()?.slice(0, 8)}...
@@ -222,9 +224,8 @@
             class="archivex-media-select-btn"
             on:click={() => triggerFileSelect(field.name, field.type)}
           >
-            {field.type === "image" ? "🖼️" : field.type === "video" ? "🎬" : "🎵"} Choose File
-          </button>
-        </div>
+            {#if field.type === "image"}<Icon name="image" size={14} />{:else if field.type === "video"}<Icon name="video" size={14} />{:else}<Icon name="music" size={14} />{/if} Choose File
+          </button>        </div>
       {:else}
         <input type="text" class="modal-input" bind:value={formData[field.name]} />
       {/if}

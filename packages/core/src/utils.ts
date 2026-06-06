@@ -23,26 +23,26 @@ export async function hashBufferBrowser(buffer: ArrayBuffer): Promise<string> {
 }
 
 /**
- * Get the emoji icon for a field type.
+ * Get the icon name for a field type (used with Icon component).
  */
 export function getFieldIcon(type: string): string {
   const icons: Record<string, string> = {
-    text: "📝",
-    integer: "🔢",
-    number: "🔣",
-    date: "📅",
-    select: "📋",
-    multiselect: "☑️",
-    checkbox: "✅",
-    image: "🖼️",
-    video: "🎬",
-    audio: "🎵",
-    url: "🔗",
-    tags: "🏷️",
-    boolean: "✅",
-    file: "📎",
+    text: "file",
+    integer: "hash",
+    number: "hash",
+    date: "calendar",
+    select: "list",
+    multiselect: "list",
+    checkbox: "toggle",
+    image: "image",
+    video: "video",
+    audio: "music",
+    url: "link",
+    tags: "tag",
+    boolean: "toggle",
+    file: "file",
   };
-  return icons[type] || "📝";
+  return icons[type] || "file";
 }
 
 /**
@@ -65,18 +65,18 @@ export function getAcceptType(type: string): string {
  * All supported field types with their metadata.
  */
 export const FIELD_TYPES: { type: FieldType; icon: string; label: string }[] = [
-  { type: "text", icon: "📝", label: "Text" },
-  { type: "integer", icon: "🔢", label: "Integer" },
-  { type: "number", icon: "🔣", label: "Real Number" },
-  { type: "date", icon: "📅", label: "Date" },
-  { type: "select", icon: "📋", label: "Select" },
-  { type: "multiselect", icon: "☑️", label: "Multi-Select" },
-  { type: "checkbox", icon: "✅", label: "Checkbox" },
-  { type: "image", icon: "🖼️", label: "Image" },
-  { type: "video", icon: "🎬", label: "Video" },
-  { type: "audio", icon: "🎵", label: "Audio" },
-  { type: "url", icon: "🔗", label: "URL" },
-  { type: "tags", icon: "🏷️", label: "Tags" },
+  { type: "text", icon: "file", label: "Text" },
+  { type: "integer", icon: "hash", label: "Integer" },
+  { type: "number", icon: "hash", label: "Real Number" },
+  { type: "date", icon: "calendar", label: "Date" },
+  { type: "select", icon: "list", label: "Select" },
+  { type: "multiselect", icon: "list", label: "Multi-Select" },
+  { type: "checkbox", icon: "toggle", label: "Checkbox" },
+  { type: "image", icon: "image", label: "Image" },
+  { type: "video", icon: "video", label: "Video" },
+  { type: "audio", icon: "music", label: "Audio" },
+  { type: "url", icon: "link", label: "URL" },
+  { type: "tags", icon: "tag", label: "Tags" },
 ];
 
 /**

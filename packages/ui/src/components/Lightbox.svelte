@@ -12,10 +12,12 @@
   }
 </script>
 
+<!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
 <div class="lightbox" on:click={onClose} on:keypress={() => {}} role="dialog" tabindex="-1">
   <button class="lightbox-close" on:click|stopPropagation={onClose}>×</button>
   <button class="lightbox-nav lightbox-prev" on:click|stopPropagation={prev}>‹</button>
   <button class="lightbox-nav lightbox-next" on:click|stopPropagation={next}>›</button>
+  <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
   <div class="lightbox-img-container" on:click|stopPropagation={() => {}} on:keypress={() => {}} role="img">
     <img class="lightbox-img" src={images[index]} alt="" />
   </div>

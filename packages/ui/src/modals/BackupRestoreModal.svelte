@@ -2,8 +2,10 @@
   import { onMount } from "svelte";
   import { dataProvider } from "../stores";
   import type { ServerConfig, UnreferencedFile } from "@archivex/core";
+  import Icon from "../components/Icon.svelte";
 
   export let closeModal: () => void;
+  // @ts-ignore - openModal reserved for external reference
   export let openModal: ((component: any, props?: any) => void) | undefined = undefined;
 
   let config: ServerConfig | null = null;
@@ -51,13 +53,13 @@
     restoreStatus = "Restoring...";
     try {
       await provider.restore(file);
-      restoreStatus = "✅ Restore completed! Refreshing...";
+      restoreStatus = "Restore completed! Refreshing...";
       setTimeout(() => {
         closeModal();
         window.location.reload();
       }, 1500);
     } catch (e) {
-      restoreStatus = "❌ Restore failed: " + (e as Error).message;
+      restoreStatus = "Restore failed: " + (e as Error).message;
     }
   }
 
@@ -91,9 +93,9 @@
       showRebuildResults = true;
 
       if (rehashed > 0) {
-        rebuildStatus = `✅ Rehashed ${rehashed} files. `;
+        rebuildStatus = `Rehashed ${rehashed} files. `;
       } else {
-        rebuildStatus = "✅ All file hashes are correct. ";
+        rebuildStatus = "All file hashes are correct. ";
       }
 
       if (unreferencedFiles.length > 0) {
@@ -102,7 +104,7 @@
         rebuildStatus += "No unreferenced files found.";
       }
     } catch (e) {
-      rebuildStatus = "❌ Rebuild failed: " + (e as Error).message;
+      rebuildStatus = "Rebuild failed: " + (e as Error).message;
     }
 
     rebuildLoading = false;
@@ -140,12 +142,12 @@
       unreferencedFiles = unreferencedFiles.filter((f) => !selectedFiles.has(f.path));
       selectedFiles = new Set();
       selectAll = false;
-      rebuildStatus = `✅ Deleted successfully. ${unreferencedFiles.length} unreferenced file(s) remaining.`;
+      rebuildStatus = `Deleted successfully. ${unreferencedFiles.length} unreferenced file(s) remaining.`;
       if (unreferencedFiles.length === 0) {
         showRebuildResults = false;
       }
     } catch (e) {
-      rebuildStatus = "❌ Delete failed: " + (e as Error).message;
+      rebuildStatus = "Delete failed: " + (e as Error).message;
     }
     deleting = false;
   }
@@ -160,7 +162,7 @@
 
 {#if !showRebuildResults}
   <!-- Settings view -->
-  <div class="modal-title">⚙️ Settings</div>
+  <div class="modal-title"><Icon name="settings" size={18} /> Settings</div>
 
   <div class="settings-section">
     <h3>Data Path</h3>
@@ -173,14 +175,14 @@
   <div class="settings-section">
     <h3>Backup</h3>
     <p style="margin-bottom:12px;color:var(--text-muted);font-size:0.9em">Download all databases and assets as a .tar.gz archive.</p>
-    <a href={getBackupUrl()} class="archivex-btn archivex-btn-primary" style="text-decoration:none;display:inline-block">⬇️ Download Backup</a>
+    <a href={getBackupUrl()} class="archivex-btn archivex-btn-primary" style="text-decoration:none;display:inline-block"><Icon name="download" size={14} /> Download Backup</a>
   </div>
 
   <div class="settings-section">
     <h3>Restore</h3>
     <p style="margin-bottom:12px;color:var(--text-muted);font-size:0.9em">Upload a previously exported .tar.gz backup to restore data.</p>
     <input type="file" id="restore-file-input" style="display:none" accept=".tar.gz,.tgz,.gz" on:change={handleRestore} />
-    <button class="archivex-btn" on:click={() => document.getElementById('restore-file-input')?.click()}>⬆️ Upload Backup</button>
+    <button class="archivex-btn" on:click={() => document.getElementById('restore-file-input')?.click()}><Icon name="upload" size={14} /> Upload Backup</button>
     {#if restoreStatus}
       <div style="margin-top:12px">{restoreStatus}</div>
     {/if}
@@ -196,9 +198,8 @@
       on:click={handleRebuild}
       disabled={rebuildLoading}
     >
-      {rebuildLoading ? "⏳ Processing..." : "🔄 Rebuild"}
+      {#if rebuildLoading}<Icon name="hourglass" size={14} /> Processing...{:else}<Icon name="refresh" size={14} /> Rebuild{/if}
     </button>
-
     {#if rebuildStatus && !showRebuildResults}
       <div style="margin-top:12px;padding:10px 14px;background:var(--bg-secondary);border-radius:8px;font-size:0.9em">
         {rebuildStatus}
@@ -212,7 +213,7 @@
 
 {:else}
   <!-- Rebuild results view (shown as popup-like within the same modal) -->
-  <div class="modal-title">🔄 Rebuild Results</div>
+  <div class="modal-title"><Icon name="refresh" size={18} /> Rebuild Results</div>
 
   <div class="rebuild-modal-summary">
     {rebuildStatus}
@@ -235,7 +236,7 @@
           on:click={handleDeleteFiles}
           disabled={selectedFiles.size === 0 || deleting}
         >
-          {deleting ? "Deleting..." : "🗑️ Delete Selected"}
+          {deleting ? "Deleting..." : "Delete Selected"}
         </button>
       </div>
     </div>
@@ -244,7 +245,7 @@
       <!-- Images section -->
       {#if imageFiles.length > 0}
         <div class="rebuild-section">
-          <h4 class="rebuild-section-title">🖼️ Images ({imageFiles.length})</h4>
+          <h4 class="rebuild-section-title"><Icon name="image" size={16} /> Images ({imageFiles.length})</h4>
           <div class="rebuild-thumb-grid">
             {#each imageFiles as file}
               <div
@@ -270,7 +271,7 @@
       <!-- Videos section -->
       {#if videoFiles.length > 0}
         <div class="rebuild-section">
-          <h4 class="rebuild-section-title">🎬 Videos ({videoFiles.length})</h4>
+          <h4 class="rebuild-section-title"><Icon name="video" size={16} /> Videos ({videoFiles.length})</h4>
           <div class="rebuild-thumb-grid">
             {#each videoFiles as file}
               <div
@@ -298,7 +299,7 @@
       <!-- Other files section -->
       {#if otherFiles.length > 0}
         <div class="rebuild-section">
-          <h4 class="rebuild-section-title">📎 Other Files ({otherFiles.length})</h4>
+          <h4 class="rebuild-section-title"><Icon name="file" size={16} /> Other Files ({otherFiles.length})</h4>
           <div class="rebuild-file-list-compact">
             {#each otherFiles as file}
               <div class="rebuild-file-row" class:selected={selectedFiles.has(file.path)}>
@@ -318,11 +319,11 @@
       {/if}
     </div>
   {:else}
-    <div class="rebuild-modal-empty">🎉 No unreferenced files found. Everything is clean!</div>
+    <div class="rebuild-modal-empty">No unreferenced files found. Everything is clean!</div>
   {/if}
 
   <div class="modal-actions">
-    <button class="archivex-btn" on:click={() => { showRebuildResults = false; }}>← Back</button>
+    <button class="archivex-btn" on:click={() => { showRebuildResults = false; }}><Icon name="arrow-left" size={14} /> Back</button>
     <button class="archivex-btn" on:click={closeModal}>Close</button>
   </div>
 {/if}

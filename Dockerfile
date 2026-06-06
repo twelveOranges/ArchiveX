@@ -2,11 +2,11 @@ FROM node:26.3.0-alpine
 
 WORKDIR /app
 
-# Install pnpm, tar and git
-RUN npm install -g pnpm && apk add --no-cache tar git
+# Install pnpm and tar
+RUN npm install -g pnpm && apk add --no-cache tar
 
-# Clone source code from git
-RUN git clone https://gitee.com/zhangbo97/ArchiveX.git .
+# Copy source code
+COPY . .
 
 # Install dependencies (ignore build scripts to avoid approval prompt)
 RUN pnpm install --frozen-lockfile --ignore-scripts || pnpm install --ignore-scripts

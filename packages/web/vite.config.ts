@@ -10,6 +10,12 @@ export default defineConfig({
       compilerOptions: {
         css: "injected",
       },
+      onwarn(warning, handler) {
+        // Suppress unused export and non-interactive element warnings
+        if (warning.code === "a11y-no-noninteractive-element-interactions") return;
+        if (warning.message?.includes("unused export property")) return;
+        handler(warning);
+      },
     }),
   ],
   resolve: {

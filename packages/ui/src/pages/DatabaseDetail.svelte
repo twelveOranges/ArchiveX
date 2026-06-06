@@ -7,6 +7,8 @@
   import ListView from "../views/ListView.svelte";
   import AddRecordModal from "../modals/AddRecordModal.svelte";
   import RecordPreviewModal from "../modals/RecordPreviewModal.svelte";
+  import MergeRecordsModal from "../modals/MergeRecordsModal.svelte";
+  import Icon from "../components/Icon.svelte";
 
   export let openModal: (component: any, props?: any) => void;
   export let closeModal: () => void;
@@ -94,23 +96,22 @@
     }
   }
 
-  async function batchMerge() {
+  function batchMerge() {
     const count = $selectedIndices.size;
     if (count < 2) {
       alert("Please select at least 2 records to merge.");
       return;
     }
-    if (!confirm(`Merge ${count} records into one? (First non-null value for each field will be kept, media fields will be combined)`)) return;
-    const provider = $dataProvider;
     const db = $currentDatabase;
-    if (!provider || !db) return;
-    try {
-      await provider.mergeRecords(db.name, Array.from($selectedIndices));
-      exitMultiSelect();
-      await refreshDatabase();
-    } catch (e) {
-      alert("Failed to merge records: " + (e as Error).message);
-    }
+    if (!db) return;
+    openModal(MergeRecordsModal, {
+      database: db,
+      indices: Array.from($selectedIndices),
+      onMerged: () => {
+        exitMultiSelect();
+        refreshDatabase();
+      },
+    });
   }
 
   function showAddRecord() {
@@ -177,7 +178,7 @@
   <div class="archivex-detail-header">
     <h2 class="archivex-detail-title">{$currentDatabase.name}</h2>
     <div class="archivex-detail-nav">
-      <button class="archivex-btn-text" on:click={goBack}>← Back</button>
+      <button class="archivex-btn-text" on:click={goBack}><Icon name="arrow-left" size={14} /> Back</button>
       <div class="archivex-nav-right">
         <!-- Sort controls -->
         <div class="archivex-sort-controls">
@@ -198,7 +199,7 @@
           class:active={$multiSelectMode}
           on:click={toggleMultiSelect}
           title="Multi-select"
-        >☑</button>
+        ><Icon name="check" size={14} /></button>
 
         <!-- Size controls -->
         <div class="archivex-size-controls">
@@ -222,10 +223,10 @@
       <span class="archivex-multiselect-count">{$selectedIndices.size} selected</span>
       <div class="archivex-multiselect-actions">
         <button class="archivex-btn archivex-btn-danger" on:click={batchDelete} disabled={$selectedIndices.size === 0}>
-          🗑️ Delete
+          <Icon name="trash" size={14} /> Delete
         </button>
         <button class="archivex-btn archivex-btn-primary" on:click={batchMerge} disabled={$selectedIndices.size < 2}>
-          🔗 Merge
+          <Icon name="link" size={14} /> Merge
         </button>
         <button class="archivex-btn" on:click={exitMultiSelect}>Cancel</button>
       </div>

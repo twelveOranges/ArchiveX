@@ -130,11 +130,22 @@ body {
   display: flex;
   gap: 4px;
   opacity: 0;
+  pointer-events: none;
   transition: opacity 0.15s;
 }
 
 .archivex-db-card:hover .archivex-db-card-actions {
   opacity: 1;
+  pointer-events: auto;
+}
+
+/* Mobile: show actions on long-press (active state) */
+@media (hover: none) {
+  .archivex-db-card:active .archivex-db-card-actions,
+  .archivex-db-card.show-actions .archivex-db-card-actions {
+    opacity: 1;
+    pointer-events: auto;
+  }
 }
 
 .archivex-db-card-action-btn {
@@ -826,11 +837,20 @@ body {
   display: flex;
   gap: 4px;
   opacity: 0;
+  pointer-events: none;
   transition: opacity 0.15s;
 }
 
 .archivex-field-row:hover .archivex-field-row-actions {
   opacity: 1;
+  pointer-events: auto;
+}
+
+@media (hover: none) {
+  .archivex-field-row-actions {
+    opacity: 1;
+    pointer-events: auto;
+  }
 }
 
 .archivex-field-action-btn {

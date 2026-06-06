@@ -71,6 +71,14 @@ const context = await esbuild.context({
     sveltePlugin({
       preprocess: sveltePreprocess(),
       compilerOptions: { css: "injected" },
+      filterWarnings: (warning) => {
+        // Suppress A11y and unused export warnings
+        if (warning.code === "a11y-label-has-associated-control") return false;
+        if (warning.code === "a11y-no-noninteractive-element-interactions") return false;
+        if (warning.code === "css-unused-selector") return false;
+        if (warning.message?.includes("unused export property")) return false;
+        return true;
+      },
     }),
   ],
   external: [
