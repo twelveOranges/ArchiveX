@@ -1,5 +1,5 @@
 // Types
-export type { FieldType, FieldDefinition, DatabaseSchema, DatabaseRecord, Database, DatabaseInfo, UploadResult, ServerConfig } from "./types";
+export type { FieldType, FieldDefinition, DatabaseSchema, DatabaseRecord, Database, DatabaseInfo, UploadResult, ServerConfig, RebuildResult, UnreferencedFile } from "./types";
 
 // Parser
 export { parseYamlDatabase, filterRecords } from "./parser";

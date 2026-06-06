@@ -1,4 +1,4 @@
-import type { DataProvider, DatabaseInfo, Database, FieldDefinition, DatabaseRecord, UploadResult, ServerConfig } from "@archivex/core";
+import type { DataProvider, DatabaseInfo, Database, FieldDefinition, DatabaseRecord, UploadResult, ServerConfig, RebuildResult } from "@archivex/core";
 
 /**
  * WebDataProvider - implements DataProvider via REST API calls to the Express server.
@@ -100,5 +100,13 @@ export class WebDataProvider implements DataProvider {
 
   async getConfig(): Promise<ServerConfig> {
     return this.api("GET", "/api/config");
+  }
+
+  async rebuild(yamlPath?: string): Promise<RebuildResult> {
+    return this.api("POST", "/api/rebuild", { yamlPath });
+  }
+
+  async cleanupFiles(files: string[], yamlPath?: string): Promise<void> {
+    await this.api("POST", "/api/rebuild/cleanup", { files, yamlPath });
   }
 }

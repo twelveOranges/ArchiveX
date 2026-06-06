@@ -39,11 +39,12 @@
           <div class="preview-media">
             {#each (Array.isArray(record[field.name]) ? record[field.name] : [String(record[field.name])]) as path, pi}
               {#if path}
+                {@const allPaths = (Array.isArray(record[field.name]) ? record[field.name] : [String(record[field.name])]).filter(Boolean)}
                 <img
                   class="preview-img"
                   src={getAssetUrl(String(path))}
                   alt=""
-                  on:click|stopPropagation={() => openLightbox([getAssetUrl(String(path))], 0)}
+                  on:click|stopPropagation={() => openLightbox(allPaths.map((p) => getAssetUrl(String(p))), pi)}
                   on:keypress={() => {}}
                   role="button"
                   tabindex="0"

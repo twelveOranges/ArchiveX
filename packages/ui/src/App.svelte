@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { dataProvider, currentPage, currentDatabase, currentMode, cardSize } from "./stores";
+  import { onMount } from "svelte";
+  import { dataProvider, currentPage, currentDatabase, currentMode, cardSize, platform } from "./stores";
   import HomePage from "./pages/HomePage.svelte";
   import DatabaseDetail from "./pages/DatabaseDetail.svelte";
   import Modal from "./components/Modal.svelte";
@@ -46,6 +47,44 @@
       closeModal();
     }
   }
+
+  // Browser history support for back button navigation
+  onMount(() => {
+    if ($platform !== "web") return;
+
+    // Replace current state as "home"
+    history.replaceState({ page: "home" }, "");
+
+    const handlePopState = (e: PopStateEvent) => {
+      if (showModal) {
+        // If modal is open, close it instead of navigating
+        closeModal();
+        // Re-push state so we stay on the same page
+        if ($currentPage === "detail") {
+          history.pushState({ page: "detail" }, "");
+        }
+        return;
+      }
+      if ($currentPage === "detail") {
+        $currentPage = "home";
+        $currentDatabase = null;
+      }
+    };
+
+    window.addEventListener("popstate", handlePopState);
+
+    // Watch for page changes to push history
+    const unsubscribe = currentPage.subscribe((page) => {
+      if (page === "detail") {
+        history.pushState({ page: "detail" }, "");
+      }
+    });
+
+    return () => {
+      window.removeEventListener("popstate", handlePopState);
+      unsubscribe();
+    };
+  });
 </script>
 
 <svelte:window on:keydown={handleKeydown} />

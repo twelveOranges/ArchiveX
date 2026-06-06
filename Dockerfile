@@ -1,12 +1,12 @@
-FROM node:20-alpine
+FROM node:26.3.0-alpine
 
 WORKDIR /app
 
 # Install pnpm and tar
-RUN corepack enable && corepack prepare pnpm@latest --activate && apk add --no-cache tar
+RUN npm install -g pnpm && apk add --no-cache tar
 
 # Copy workspace config
-COPY pnpm-workspace.yaml package.json .npmrc ./
+COPY pnpm-workspace.yaml pnpm-lock.yaml package.json .npmrc ./
 
 # Copy package.json files for all packages
 COPY packages/core/package.json ./packages/core/

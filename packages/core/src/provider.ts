@@ -1,4 +1,4 @@
-import type { DatabaseInfo, Database, FieldDefinition, DatabaseRecord, UploadResult, ServerConfig } from "./types";
+import type { DatabaseInfo, Database, FieldDefinition, DatabaseRecord, UploadResult, ServerConfig, RebuildResult } from "./types";
 
 /**
  * DataProvider interface - abstracts data access for both Web (REST API) and Obsidian (Vault API).
@@ -19,4 +19,6 @@ export interface DataProvider {
   getBackupUrl(): string;
   restore(file: File): Promise<void>;
   getConfig(): Promise<ServerConfig>;
+  rebuild(yamlPath?: string): Promise<RebuildResult>;
+  cleanupFiles(files: string[]): Promise<void>;
 }

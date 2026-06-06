@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { dataProvider, currentPage, currentDatabase, currentMode, cardSize, sortField, sortOrder, multiSelectMode, selectedIndices } from "../stores";
+  import { dataProvider, currentPage, currentDatabase, currentMode, cardSize, sortField, sortOrder, multiSelectMode, selectedIndices, platform } from "../stores";
   import type { DatabaseRecord } from "@archivex/core";
   import CardView from "../views/CardView.svelte";
   import ImagesView from "../views/ImagesView.svelte";
@@ -34,8 +34,13 @@
   }
 
   function goBack() {
-    $currentPage = "home";
-    $currentDatabase = null;
+    if ($platform === "web") {
+      // Use browser history so back button works naturally
+      history.back();
+    } else {
+      $currentPage = "home";
+      $currentDatabase = null;
+    }
     exitMultiSelect();
   }
 

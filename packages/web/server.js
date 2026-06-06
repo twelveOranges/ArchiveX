@@ -24,6 +24,34 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Detect file type by reading magic bytes
+function detectFileType(filePath) {
+  try {
+    const fd = fs.openSync(filePath, "r");
+    const buf = Buffer.alloc(12);
+    fs.readSync(fd, buf, 0, 12, 0);
+    fs.closeSync(fd);
+
+    // Image signatures
+    if (buf[0] === 0xFF && buf[1] === 0xD8 && buf[2] === 0xFF) return "image"; // JPEG
+    if (buf[0] === 0x89 && buf[1] === 0x50 && buf[2] === 0x4E && buf[3] === 0x47) return "image"; // PNG
+    if (buf[0] === 0x47 && buf[1] === 0x49 && buf[2] === 0x46) return "image"; // GIF
+    if (buf[0] === 0x42 && buf[1] === 0x4D) return "image"; // BMP
+    if (buf.toString("ascii", 0, 4) === "RIFF" && buf.toString("ascii", 8, 12) === "WEBP") return "image"; // WebP
+    if (buf.toString("utf8", 0, 5) === "<?xml" || buf.toString("utf8", 0, 4) === "<svg") return "image"; // SVG
+
+    // Video signatures
+    if (buf.toString("ascii", 4, 8) === "ftyp") return "video"; // MP4/MOV
+    if (buf[0] === 0x1A && buf[1] === 0x45 && buf[2] === 0xDF && buf[3] === 0xA3) return "video"; // MKV/WebM
+    if (buf.toString("ascii", 0, 4) === "RIFF" && buf.toString("ascii", 8, 12) === "AVI ") return "video"; // AVI
+    if (buf[0] === 0x00 && buf[1] === 0x00 && buf[2] === 0x01 && (buf[3] === 0xBA || buf[3] === 0xB3)) return "video"; // MPEG
+
+    return "file";
+  } catch {
+    return "file";
+  }
+}
+
 // Serve built frontend files
 app.use(express.static(path.join(__dirname, "dist/client")));
 
@@ -449,6 +477,164 @@ app.post("/api/restore", restoreUpload.single("backup"), (req, res) => {
     if (fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
     res.status(500).json({ error: "Restore failed: " + e.message });
   }
+});
+
+// Rebuild - recalculate file hashes and find unreferenced files
+app.post("/api/rebuild", (req, res) => {
+  const { yamlPath } = req.body;
+  const targetDir = yamlPath || DATA_DIR;
+
+  // Verify the directory exists
+  if (!fs.existsSync(targetDir)) {
+    return res.status(400).json({ error: `Directory not found: ${targetDir}` });
+  }
+
+  try {
+    // 1. Find all YAML files in the target directory
+    const yamlFiles = fs.readdirSync(targetDir).filter((f) => f.endsWith(".yaml") || f.endsWith(".yml"));
+
+    // 2. Collect all referenced file paths from all databases
+    const referencedFiles = new Set();
+    let rehashed = 0;
+
+    for (const yamlFile of yamlFiles) {
+      const filePath = path.join(targetDir, yamlFile);
+      const content = fs.readFileSync(filePath, "utf-8");
+      const db = parseYamlDatabase(content);
+      if (!db) continue;
+
+      const dbName = yamlFile.replace(/\.(yaml|yml)$/, "");
+      const assetsDir = path.join(targetDir, `${toSafeAssetName(dbName)}_assets`);
+
+      // Check each record for file references
+      let modified = false;
+      for (const record of db.records) {
+        for (const field of db.schema.fields) {
+          if (field.type === "image" || field.type === "video" || field.type === "audio" || field.type === "file") {
+            const value = record[field.name];
+            if (!value) continue;
+
+            const paths = Array.isArray(value) ? value : [value];
+            const newPaths = [];
+
+            for (const p of paths) {
+              if (!p) continue;
+              const strPath = String(p);
+              referencedFiles.add(strPath);
+
+              // Try to rehash: if the file exists, recalculate its hash
+              const fullFilePath = path.join(targetDir, strPath);
+              if (fs.existsSync(fullFilePath)) {
+                const buffer = fs.readFileSync(fullFilePath);
+                const newHash = hashBuffer(buffer);
+                const fileName = path.basename(strPath);
+                const dirName = path.dirname(strPath);
+
+                if (fileName !== newHash) {
+                  // File name doesn't match its hash - rename it
+                  const newFilePath = path.join(targetDir, dirName, newHash);
+                  if (!fs.existsSync(newFilePath)) {
+                    fs.renameSync(fullFilePath, newFilePath);
+                  } else {
+                    // Hash file already exists, just remove the old one
+                    fs.unlinkSync(fullFilePath);
+                  }
+                  const newRelPath = `${dirName}/${newHash}`;
+                  newPaths.push(newRelPath);
+                  referencedFiles.delete(strPath);
+                  referencedFiles.add(newRelPath);
+                  rehashed++;
+                  modified = true;
+                } else {
+                  newPaths.push(strPath);
+                }
+              } else {
+                newPaths.push(strPath);
+              }
+            }
+
+            // Update record if paths changed
+            if (modified) {
+              record[field.name] = Array.isArray(value)
+                ? newPaths
+                : (newPaths.length > 0 ? newPaths[0] : null);
+            }
+          }
+        }
+      }
+
+      // Save database if modified
+      if (modified) {
+        saveDatabase(yamlFile, db);
+      }
+    }
+
+    // 3. Scan all *_assets directories for unreferenced files
+    const unreferencedFiles = [];
+    let totalFiles = 0;
+
+    const allEntries = fs.readdirSync(targetDir);
+    const assetsDirs = allEntries.filter((d) => {
+      const fullPath = path.join(targetDir, d);
+      return d.endsWith("_assets") && fs.statSync(fullPath).isDirectory();
+    });
+
+    for (const assetsDir of assetsDirs) {
+      const assetsDirPath = path.join(targetDir, assetsDir);
+      const files = fs.readdirSync(assetsDirPath);
+
+      for (const file of files) {
+        if (file.startsWith(".")) continue; // Skip hidden files
+        totalFiles++;
+        const relativePath = `${assetsDir}/${file}`;
+
+        if (!referencedFiles.has(relativePath)) {
+          const fullPath = path.join(assetsDirPath, file);
+          const stat = fs.statSync(fullPath);
+          unreferencedFiles.push({
+            path: relativePath,
+            size: stat.size,
+            type: detectFileType(fullPath),
+          });
+        }
+      }
+    }
+
+    res.json({
+      rehashed,
+      totalFiles,
+      unreferencedFiles,
+    });
+  } catch (e) {
+    res.status(500).json({ error: "Rebuild failed: " + e.message });
+  }
+});
+
+// Cleanup - delete selected unreferenced files
+app.post("/api/rebuild/cleanup", (req, res) => {
+  const { files, yamlPath } = req.body;
+  const targetDir = yamlPath || DATA_DIR;
+
+  if (!Array.isArray(files) || files.length === 0) {
+    return res.status(400).json({ error: "files array is required" });
+  }
+
+  let deleted = 0;
+  const errors = [];
+
+  for (const relativePath of files) {
+    const fullPath = path.join(targetDir, relativePath);
+    try {
+      if (fs.existsSync(fullPath)) {
+        fs.unlinkSync(fullPath);
+        deleted++;
+      }
+    } catch (e) {
+      errors.push({ path: relativePath, error: e.message });
+    }
+  }
+
+  res.json({ success: true, deleted, errors });
 });
 
 // SPA fallback - serve index.html for non-API routes

@@ -4,6 +4,9 @@ import type { DataProvider, Database, DatabaseInfo } from "@archivex/core";
 // The active DataProvider instance (set by the host app: web or obsidian)
 export const dataProvider = writable<DataProvider | null>(null);
 
+// Platform identifier: "web" or "obsidian"
+export const platform = writable<"web" | "obsidian">("web");
+
 // Current page state
 export const currentPage = writable<"home" | "detail">("home");
 

@@ -57,3 +57,15 @@ export interface ServerConfig {
   dataDir: string;
   port: number | string;
 }
+
+export interface UnreferencedFile {
+  path: string;
+  size: number;
+  type: "image" | "video" | "file";
+}
+
+export interface RebuildResult {
+  rehashed: number;
+  totalFiles: number;
+  unreferencedFiles: UnreferencedFile[];
+}

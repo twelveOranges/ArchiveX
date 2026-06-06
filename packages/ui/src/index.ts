@@ -1,6 +1,6 @@
 // Shared Svelte UI components
 export { default as App } from "./App.svelte";
-export { dataProvider, currentPage, currentDatabase, currentMode, cardSize, sortField, sortOrder, multiSelectMode, selectedIndices } from "./stores";
+export { dataProvider, platform, currentPage, currentDatabase, currentMode, cardSize, sortField, sortOrder, multiSelectMode, selectedIndices } from "./stores";
 export type { SortField, SortOrder } from "./stores";
 export { default as HomePage } from "./pages/HomePage.svelte";
 export { default as DatabaseDetail } from "./pages/DatabaseDetail.svelte";

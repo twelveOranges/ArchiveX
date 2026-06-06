@@ -1,6 +1,6 @@
 import { TFile, TFolder } from "obsidian";
 import { stringify } from "yaml";
-import type { DataProvider, DatabaseInfo, Database, FieldDefinition, DatabaseRecord, UploadResult, ServerConfig } from "@archivex/core";
+import type { DataProvider, DatabaseInfo, Database, FieldDefinition, DatabaseRecord, UploadResult, ServerConfig, RebuildResult } from "@archivex/core";
 import { parseYamlDatabase, toSafeAssetName, hashBufferBrowser } from "@archivex/core";
 import type { App as ObsidianApp } from "obsidian";
 
@@ -222,5 +222,187 @@ export class VaultDataProvider implements DataProvider {
       dataDir: `${vaultPath}/${ARCHIVE_X_DIR}`,
       port: 0,
     };
+  }
+
+  async deleteRecords(dbName: string, indices: number[]): Promise<void> {
+    const db = await this.getDatabase(dbName);
+    const sorted = [...indices].sort((a, b) => b - a);
+    for (const idx of sorted) {
+      if (idx >= 0 && idx < db.records.length) {
+        db.records.splice(idx, 1);
+      }
+    }
+    await this.saveDatabase(dbName, db);
+  }
+
+  async mergeRecords(dbName: string, indices: number[]): Promise<void> {
+    const db = await this.getDatabase(dbName);
+    if (indices.length < 2) throw new Error("At least 2 records required for merge");
+
+    const merged: DatabaseRecord = {};
+    for (const field of db.schema.fields) {
+      const values = indices.map((idx) => db.records[idx][field.name]).filter((v) => v != null);
+      if (field.type === "image" || field.type === "video" || field.type === "audio" || field.type === "tags" || field.type === "multiselect") {
+        const allValues: string[] = [];
+        for (const v of values) {
+          if (Array.isArray(v)) {
+            allValues.push(...(v as string[]));
+          } else if (v) {
+            allValues.push(v as string);
+          }
+        }
+        merged[field.name] = allValues.length > 0 ? (allValues.length === 1 ? allValues[0] : allValues) : null;
+      } else {
+        merged[field.name] = values.length > 0 ? values[0] : null;
+      }
+    }
+
+    const sortedDesc = [...indices].sort((a, b) => b - a);
+    const insertAt = Math.min(...indices);
+    for (const idx of sortedDesc) {
+      db.records.splice(idx, 1);
+    }
+    db.records.splice(insertAt, 0, merged);
+    await this.saveDatabase(dbName, db);
+  }
+
+  async rebuild(): Promise<RebuildResult> {
+    await this.ensureDir(ARCHIVE_X_DIR);
+    const dir = this.app.vault.getAbstractFileByPath(ARCHIVE_X_DIR);
+    if (!dir || !(dir instanceof TFolder)) {
+      return { rehashed: 0, totalFiles: 0, unreferencedFiles: [] };
+    }
+
+    const yamlFiles = this.getYamlFiles();
+    const referencedFiles = new Set<string>();
+    let rehashed = 0;
+
+    for (const yamlFile of yamlFiles) {
+      const content = await this.app.vault.read(yamlFile);
+      const db = parseYamlDatabase(content);
+      if (!db) continue;
+
+      const dbName = yamlFile.basename;
+      let modified = false;
+
+      for (const record of db.records) {
+        for (const field of db.schema.fields) {
+          if (field.type === "image" || field.type === "video" || field.type === "audio" || field.type === "file") {
+            const value = record[field.name];
+            if (!value) continue;
+
+            const paths = Array.isArray(value) ? (value as string[]) : [value as string];
+            const newPaths: string[] = [];
+
+            for (const p of paths) {
+              if (!p) continue;
+              referencedFiles.add(p);
+
+              const fullPath = `${ARCHIVE_X_DIR}/${p}`;
+              const file = this.app.vault.getAbstractFileByPath(fullPath);
+              if (file && file instanceof TFile) {
+                const buffer = await this.app.vault.readBinary(file);
+                const newHash = await hashBufferBrowser(buffer);
+                const fileName = file.name;
+                const dirName = file.parent?.path || "";
+
+                if (fileName !== newHash) {
+                  const newFilePath = `${dirName}/${newHash}`;
+                  const existing = this.app.vault.getAbstractFileByPath(newFilePath);
+                  if (!existing) {
+                    await this.app.vault.rename(file, newFilePath);
+                  } else {
+                    await this.app.vault.delete(file);
+                  }
+                  const newRelPath = `${toSafeAssetName(dbName)}_assets/${newHash}`;
+                  newPaths.push(newRelPath);
+                  referencedFiles.delete(p);
+                  referencedFiles.add(newRelPath);
+                  rehashed++;
+                  modified = true;
+                } else {
+                  newPaths.push(p);
+                }
+              } else {
+                newPaths.push(p);
+              }
+            }
+
+            if (modified) {
+              record[field.name] = Array.isArray(value)
+                ? newPaths
+                : (newPaths.length > 0 ? newPaths[0] : null);
+            }
+          }
+        }
+      }
+
+      if (modified) {
+        await this.saveDatabase(yamlFile.basename, db);
+      }
+    }
+
+    // Scan all *_assets directories for unreferenced files
+    const unreferencedFiles: { path: string; size: number; type: "image" | "video" | "file" }[] = [];
+    let totalFiles = 0;
+
+    for (const child of dir.children) {
+      if (child instanceof TFolder && child.name.endsWith("_assets")) {
+        for (const file of child.children) {
+          if (file instanceof TFile) {
+            totalFiles++;
+            const relativePath = `${child.name}/${file.name}`;
+            if (!referencedFiles.has(relativePath)) {
+              const fileType = await this.detectFileType(file);
+              unreferencedFiles.push({
+                path: relativePath,
+                size: file.stat.size,
+                type: fileType,
+              });
+            }
+          }
+        }
+      }
+    }
+
+    return { rehashed, totalFiles, unreferencedFiles };
+  }
+
+  private async detectFileType(file: TFile): Promise<"image" | "video" | "file"> {
+    try {
+      const buffer = await this.app.vault.readBinary(file);
+      const bytes = new Uint8Array(buffer, 0, Math.min(12, buffer.byteLength));
+
+      // Image signatures
+      if (bytes[0] === 0xFF && bytes[1] === 0xD8 && bytes[2] === 0xFF) return "image"; // JPEG
+      if (bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4E && bytes[3] === 0x47) return "image"; // PNG
+      if (bytes[0] === 0x47 && bytes[1] === 0x49 && bytes[2] === 0x46) return "image"; // GIF
+      if (bytes[0] === 0x42 && bytes[1] === 0x4D) return "image"; // BMP
+      const ascii4 = String.fromCharCode(bytes[0], bytes[1], bytes[2], bytes[3]);
+      const ascii8_12 = bytes.length >= 12 ? String.fromCharCode(bytes[8], bytes[9], bytes[10], bytes[11]) : "";
+      if (ascii4 === "RIFF" && ascii8_12 === "WEBP") return "image"; // WebP
+
+      // Video signatures
+      if (bytes.length >= 8) {
+        const ftyp = String.fromCharCode(bytes[4], bytes[5], bytes[6], bytes[7]);
+        if (ftyp === "ftyp") return "video"; // MP4/MOV
+      }
+      if (bytes[0] === 0x1A && bytes[1] === 0x45 && bytes[2] === 0xDF && bytes[3] === 0xA3) return "video"; // MKV/WebM
+      if (ascii4 === "RIFF" && ascii8_12 === "AVI ") return "video"; // AVI
+
+      return "file";
+    } catch {
+      return "file";
+    }
+  }
+
+  async cleanupFiles(files: string[]): Promise<void> {
+    for (const relativePath of files) {
+      const fullPath = `${ARCHIVE_X_DIR}/${relativePath}`;
+      const file = this.app.vault.getAbstractFileByPath(fullPath);
+      if (file) {
+        await this.app.vault.delete(file);
+      }
+    }
   }
 }

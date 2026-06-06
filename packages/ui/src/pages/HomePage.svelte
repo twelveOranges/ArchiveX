@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import { dataProvider, currentPage, currentDatabase } from "../stores";
+  import { dataProvider, platform, currentPage, currentDatabase } from "../stores";
   import type { DatabaseInfo } from "@archivex/core";
   import CreateDatabaseModal from "../modals/CreateDatabaseModal.svelte";
   import EditDatabaseModal from "../modals/EditDatabaseModal.svelte";
@@ -57,7 +57,7 @@
     }
   }
 
-  function showBackupRestore() {
+  function showSettings() {
     openModal(BackupRestoreModal);
   }
 </script>
@@ -65,7 +65,9 @@
 <div class="archivex-home-header">
   <h2>🗄️ ArchiveX Databases</h2>
   <div class="archivex-home-actions">
-    <button class="archivex-btn" on:click={showBackupRestore}>⚙️ Backup</button>
+    {#if $platform === "web"}
+      <button class="archivex-btn" on:click={showSettings}>⚙️ Settings</button>
+    {/if}
   </div>
 </div>
 
