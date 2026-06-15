@@ -41,6 +41,15 @@
 </script>
 
 <div class="archivex-card-grid" style="grid-template-columns: repeat(auto-fill, minmax({cardSize}px, 1fr))">
+  {#if !multiSelect}
+    <div class="archivex-card archivex-add-card" on:click={onAddClick} on:keypress={onAddClick} role="button" tabindex="0">
+      <div class="archivex-add-card-content">
+        <div class="archivex-db-card-create-icon">+</div>
+        <div class="archivex-db-card-create-text">Add Record</div>
+      </div>
+    </div>
+  {/if}
+
   {#each sortedRecords as { record, originalIndex }}
     <div
       class="archivex-card"
@@ -75,13 +84,4 @@
       </div>
     </div>
   {/each}
-
-  {#if !multiSelect}
-    <div class="archivex-card archivex-add-card" on:click={onAddClick} on:keypress={onAddClick} role="button" tabindex="0">
-      <div class="archivex-add-card-content">
-        <div class="archivex-db-card-create-icon">+</div>
-        <div class="archivex-db-card-create-text">Add Record</div>
-      </div>
-    </div>
-  {/if}
 </div>

@@ -74,14 +74,14 @@
   </div>
 
   <div class="archivex-card-grid" style="grid-template-columns: repeat(auto-fill, minmax({cardSize}px, 1fr))">
+    <div class="archivex-gallery-item archivex-db-card-create" on:click={onAddClick} on:keypress={onAddClick} role="button" tabindex="0">
+      <div class="archivex-db-card-create-icon">+</div>
+    </div>
+
     {#each allImages as img, i}
       <div class="archivex-gallery-item" on:click={() => handleImageClick(i)} on:keypress={() => handleImageClick(i)} role="button" tabindex="0">
         <img class="archivex-gallery-img" src={img.url} alt="" />
       </div>
     {/each}
-
-    <div class="archivex-gallery-item archivex-db-card-create" on:click={onAddClick} on:keypress={onAddClick} role="button" tabindex="0">
-      <div class="archivex-db-card-create-icon">+</div>
-    </div>
   </div>
 {/if}
