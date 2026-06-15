@@ -112,15 +112,17 @@ def get_field_type_from_template(type_code: str) -> str:
     return type_mapping.get(type_code, 'text')
 
 def parse_file_paths(file_paths_str: str) -> List[str]:
-    """Parse file:/// paths from string, handling newline separation"""
+    """Parse file:/// paths from string, handling comma or newline separation"""
     if not file_paths_str:
         return []
     
     paths = []
-    for line in file_paths_str.strip().split('\n'):
-        line = line.strip()
-        if line.startswith('file:///'):
-            paths.append(line)
+    # Split by 'file:///' to handle both comma-separated and newline-separated formats
+    parts = file_paths_str.split('file:///')
+    for part in parts:
+        part = part.strip().rstrip(',').strip()
+        if part:
+            paths.append('file:///' + part)
     
     return paths
 
@@ -335,7 +337,10 @@ def convert_memento_to_yaml(
                                         converted_paths.append(f"{asset_prefix}/{dest_filename}")
                             
                             if converted_paths:
-                                record[field_title] = '\\n'.join(converted_paths)
+                                if len(converted_paths) == 1:
+                                    record[field_title] = converted_paths[0]
+                                else:
+                                    record[field_title] = converted_paths
                         else:
                             # Use plaintext value from CSV
                             record[field_title] = value
@@ -410,7 +415,10 @@ def convert_memento_to_yaml(
                                         converted_paths.append(f"{asset_prefix}/{dest_filename}")
                             
                             if converted_paths:
-                                record[field_title] = '\\n'.join(converted_paths)
+                                if len(converted_paths) == 1:
+                                    record[field_title] = converted_paths[0]
+                                else:
+                                    record[field_title] = converted_paths
                         else:
                             # Try to decrypt if it's encrypted text
                             decrypted = decrypt_memento_value(str(value), field_type, aes_key_hex)

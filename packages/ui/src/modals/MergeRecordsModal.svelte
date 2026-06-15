@@ -7,6 +7,7 @@
   export let database: Database & { name: string };
   export let indices: number[];
   export let onMerged: () => void;
+  export let onCancel: (() => void) | undefined = undefined;
 
   const records = indices.map((i) => database.records[i]);
   const fields = database.schema.fields;
@@ -93,6 +94,11 @@
   }
 
   let merging = false;
+
+  function handleCancel() {
+    if (onCancel) onCancel();
+    closeModal();
+  }
 
   async function doMerge() {
     const provider = $dataProvider;
@@ -222,7 +228,7 @@
   </div>
 
   <div class="merge-actions">
-    <button class="archivex-btn" on:click={closeModal} disabled={merging}>Cancel</button>
+    <button class="archivex-btn" on:click={handleCancel} disabled={merging}>Cancel</button>
     <button class="archivex-btn archivex-btn-primary" on:click={doMerge} disabled={merging}>
       {#if merging}
         Merging...

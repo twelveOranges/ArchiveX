@@ -6,6 +6,7 @@
   export let database: Database & { name: string };
   export let onClose: () => void;
   export let openLightbox: (images: string[], index: number) => void;
+  export let startRecordIndex: number = -1; // If >= 0, start at this record's slide
 
   // Collect all image fields
   $: imageFields = database.schema.fields.filter(
@@ -16,6 +17,14 @@
   $: slides = buildSlides(database.records, imageFields);
 
   let currentSlide = 0;
+  let initialized = false;
+
+  // Set initial slide based on startRecordIndex
+  $: if (!initialized && slides.length > 0 && startRecordIndex >= 0) {
+    const idx = slides.findIndex(s => s.recordIndex === startRecordIndex);
+    if (idx >= 0) currentSlide = idx;
+    initialized = true;
+  }
 
   interface SlideImage {
     url: string;

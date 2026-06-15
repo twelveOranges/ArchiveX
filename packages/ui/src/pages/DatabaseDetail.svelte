@@ -9,7 +9,11 @@
   import AddRecordModal from "../modals/AddRecordModal.svelte";
   import RecordPreviewModal from "../modals/RecordPreviewModal.svelte";
   import MergeRecordsModal from "../modals/MergeRecordsModal.svelte";
+  import DedupModal from "../modals/DedupModal.svelte";
   import Icon from "../components/Icon.svelte";
+
+  // Slide view state: when opening slide from record preview
+  let slideStartIndex = -1;
 
   export let openModal: (component: any, props?: any) => void;
   export let closeModal: () => void;
@@ -203,6 +207,21 @@
       onEdit: (idx: number) => showEditRecord(idx),
       onDelete: (idx: number) => confirmDeleteRecord(idx),
       openLightbox,
+      onSlideView: (idx: number) => openSlideAtRecord(idx),
+    });
+  }
+
+  function openSlideAtRecord(recordIndex: number) {
+    slideStartIndex = recordIndex;
+    $currentMode = "slide";
+  }
+
+  function showDedupModal() {
+    if (!$currentDatabase) return;
+    openModal(DedupModal, {
+      database: $currentDatabase,
+      openModal,
+      onMerged: () => refreshDatabase(),
     });
   }
 
@@ -309,6 +328,13 @@
             <button class="archivex-search-clear" on:click={() => searchQuery = ""}>×</button>
           {/if}
         </div>
+
+        <!-- Dedup button -->
+        <button
+          class="archivex-btn-icon"
+          on:click={showDedupModal}
+          title="Find Duplicates"
+        ><Icon name="copy" size={14} /></button>
       </div>
     </div>
   </div>
@@ -365,7 +391,7 @@
     {:else if $currentMode === "list"}
       <ListView database={$currentDatabase} {sortedRecords} onRecordClick={showRecordPreview} />
     {:else if $currentMode === "slide"}
-      <SlideshowView database={$currentDatabase} onClose={() => { $currentMode = "card"; }} {openLightbox} />
+      <SlideshowView database={$currentDatabase} onClose={() => { $currentMode = "card"; slideStartIndex = -1; }} {openLightbox} startRecordIndex={slideStartIndex} />
     {/if}
   </div>
 {/if}

@@ -10,6 +10,7 @@
   export let onEdit: (index: number) => void;
   export let onDelete: (index: number) => void;
   export let openLightbox: (images: string[], index: number) => void;
+  export let onSlideView: ((index: number) => void) | undefined = undefined;
 
   function getAssetUrl(path: string): string {
     const provider = $dataProvider;
@@ -26,6 +27,9 @@
 <div class="preview-header">
   <div class="modal-title" style="margin:0">{getTitle()}</div>
   <div class="preview-actions">
+    {#if onSlideView}
+      <button class="archivex-btn" on:click={() => { closeModal(); onSlideView(index); }} title="Slide View"><Icon name="maximize" size={14} /> Slide</button>
+    {/if}
     <button class="archivex-btn" on:click={() => { closeModal(); onEdit(index); }}><Icon name="edit" size={14} /> Edit</button>
     <button class="archivex-btn archivex-btn-danger" on:click={() => { onDelete(index); }}><Icon name="trash" size={14} /> Delete</button>
   </div>
