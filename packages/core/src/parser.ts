@@ -13,12 +13,21 @@ export function parseYamlDatabase(content: string): Database | null {
     }
 
     const schema: DatabaseSchema = {
-      fields: (parsed.schema.fields || []).map((f: any) => ({
-        name: f.name || "",
-        type: f.type || "text",
-        label: f.label || f.name || "",
-      })),
+      fields: (parsed.schema.fields || []).map((f: any) => {
+        const field: FieldDefinition = {
+          name: f.name || "",
+          type: f.type || "text",
+          label: f.label || f.name || "",
+        };
+        if (f.options && Array.isArray(f.options)) {
+          field.options = f.options;
+        }
+        return field;
+      }),
     };
+    if (parsed.schema.icon) {
+      schema.icon = parsed.schema.icon;
+    }
 
     const records: DatabaseRecord[] = (parsed.records || []).map((r: any) => {
       const record: DatabaseRecord = {};

@@ -10,3 +10,4 @@ export { default as CardView } from "./views/CardView.svelte";
 export { default as ImagesView } from "./views/ImagesView.svelte";
 export { default as TableView } from "./views/TableView.svelte";
 export { default as ListView } from "./views/ListView.svelte";
+export { default as SlideView } from "./views/SlideView.svelte";

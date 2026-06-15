@@ -50,6 +50,7 @@ export class VaultDataProvider implements DataProvider {
         name,
         recordCount: db ? db.records.length : 0,
         fieldCount: db ? db.schema.fields.length : 0,
+        icon: db && db.schema.icon ? db.schema.icon : undefined,
       });
     }
 
@@ -74,13 +75,15 @@ export class VaultDataProvider implements DataProvider {
     await this.adapter.write(filePath, content);
   }
 
-  async createDatabase(name: string, fields: FieldDefinition[]): Promise<void> {
+  async createDatabase(name: string, fields: FieldDefinition[], icon?: string): Promise<void> {
     await this.ensureDir(ARCHIVE_X_DIR);
     const filePath = `${ARCHIVE_X_DIR}/${name}.yaml`;
     const exists = await this.adapter.exists(filePath);
     if (exists) throw new Error("Database already exists");
 
-    const database: Database = { schema: { fields }, records: [] };
+    const schema: any = { fields };
+    if (icon) schema.icon = icon;
+    const database: Database = { schema, records: [] };
     await this.saveDatabase(name, database);
 
     // Create assets directory
@@ -88,12 +91,34 @@ export class VaultDataProvider implements DataProvider {
     await this.ensureDir(assetsDir);
   }
 
-  async updateDatabase(name: string, newName?: string, fields?: FieldDefinition[]): Promise<void> {
+  async updateDatabase(name: string, newName?: string, fields?: FieldDefinition[], renamedFields?: Record<string, string>, icon?: string): Promise<void> {
     const db = await this.getDatabase(name);
+
+    // Update icon if provided
+    if (icon !== undefined) {
+      if (icon) {
+        db.schema.icon = icon;
+      } else {
+        delete db.schema.icon;
+      }
+    }
 
     if (fields) {
       const oldFields = db.schema.fields;
       db.schema.fields = fields;
+
+      // Apply field renames first: migrate data from old key to new key
+      if (renamedFields) {
+        for (const record of db.records) {
+          for (const [oldKey, newKey] of Object.entries(renamedFields)) {
+            if (oldKey !== newKey && record[oldKey] !== undefined) {
+              record[newKey] = record[oldKey];
+              delete record[oldKey];
+            }
+          }
+        }
+      }
+
       for (const record of db.records) {
         for (const newField of fields) {
           if (!oldFields.find((f) => f.name === newField.name) && record[newField.name] === undefined) {

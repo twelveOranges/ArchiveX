@@ -34,12 +34,12 @@ export class WebDataProvider implements DataProvider {
     return this.api("GET", `/api/databases/${encodeURIComponent(name)}`);
   }
 
-  async createDatabase(name: string, fields: FieldDefinition[]): Promise<void> {
-    await this.api("POST", "/api/databases", { name, fields });
+  async createDatabase(name: string, fields: FieldDefinition[], icon?: string): Promise<void> {
+    await this.api("POST", "/api/databases", { name, fields, icon });
   }
 
-  async updateDatabase(name: string, newName?: string, fields?: FieldDefinition[]): Promise<void> {
-    await this.api("PUT", `/api/databases/${encodeURIComponent(name)}`, { newName, fields });
+  async updateDatabase(name: string, newName?: string, fields?: FieldDefinition[], renamedFields?: Record<string, string>, icon?: string): Promise<void> {
+    await this.api("PUT", `/api/databases/${encodeURIComponent(name)}`, { newName, fields, renamedFields, icon });
   }
 
   async deleteDatabase(name: string): Promise<void> {

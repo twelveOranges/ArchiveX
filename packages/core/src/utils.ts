@@ -90,3 +90,21 @@ export function escapeHtml(str: string): string {
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#039;");
 }
+
+/**
+ * Available icons for databases.
+ */
+export const DATABASE_ICONS: { name: string; label: string }[] = [
+  { name: "folder", label: "Folder" },
+  { name: "book", label: "Book" },
+  { name: "users", label: "Contacts" },
+  { name: "archive", label: "Archive" },
+  { name: "database", label: "Database" },
+  { name: "star", label: "Star" },
+  { name: "heart", label: "Heart" },
+  { name: "music", label: "Music" },
+  { name: "image", label: "Gallery" },
+  { name: "film", label: "Film" },
+  { name: "shopping-bag", label: "Shopping" },
+  { name: "briefcase", label: "Work" },
+];

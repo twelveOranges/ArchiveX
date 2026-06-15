@@ -167,6 +167,111 @@
   border-color: var(--interactive-accent);
 }
 
+/* Search box */
+.archivex-search-box {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  border: 1px solid var(--background-modifier-border);
+  background: var(--background-secondary);
+  transition: border-color 0.15s;
+}
+.archivex-search-box:focus-within {
+  border-color: var(--interactive-accent);
+}
+.archivex-search-input {
+  border: none;
+  background: transparent;
+  color: var(--text-normal);
+  font-size: 0.8em;
+  outline: none;
+  width: 100px;
+  min-width: 60px;
+}
+.archivex-search-input::placeholder {
+  color: var(--text-muted);
+}
+.archivex-search-clear {
+  border: none;
+  background: none;
+  color: var(--text-muted);
+  font-size: 1.1em;
+  cursor: pointer;
+  padding: 0 2px;
+  line-height: 1;
+}
+.archivex-search-clear:hover {
+  color: var(--text-normal);
+}
+.archivex-search-count {
+  font-size: 0.7em;
+  color: var(--text-muted);
+  white-space: nowrap;
+  padding: 0 4px;
+}
+
+/* Filter panel */
+.archivex-filter-panel {
+  padding: 10px 14px;
+  margin: 8px 0;
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 6px;
+}
+.archivex-filter-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+.archivex-filter-panel-title {
+  font-size: 0.85em;
+  font-weight: 600;
+  color: var(--text-normal);
+}
+.archivex-filter-clear {
+  font-size: 0.75em;
+  color: var(--interactive-accent);
+  cursor: pointer;
+}
+.archivex-filter-group {
+  margin-bottom: 8px;
+}
+.archivex-filter-group:last-child {
+  margin-bottom: 0;
+}
+.archivex-filter-group-label {
+  font-size: 0.75em;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+  display: block;
+}
+.archivex-filter-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.archivex-filter-chip {
+  padding: 2px 10px;
+  border-radius: 12px;
+  border: 1px solid var(--background-modifier-border);
+  background: var(--background-primary);
+  color: var(--text-normal);
+  font-size: 0.75em;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.archivex-filter-chip:hover {
+  border-color: var(--interactive-accent);
+}
+.archivex-filter-chip.active {
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+  border-color: var(--interactive-accent);
+}
+
 /* Multi-select action bar */
 .archivex-multiselect-bar {
   display: flex;
@@ -1565,7 +1670,7 @@
   right: 0;
   bottom: 0;
   background: rgba(0, 0, 0, 0.92);
-  z-index: 20000;
+  z-index: 30000;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1842,6 +1947,79 @@
   font-size: 0.75em;
   text-align: center;
 }
+
+/* ==================== Icon Grid ==================== */
+.archivex-icon-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 6px;
+}
+.archivex-icon-grid-item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px;
+  border-radius: 8px;
+  border: 2px solid transparent;
+  background: var(--background-secondary);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.archivex-icon-grid-item:hover {
+  background: var(--background-modifier-hover);
+}
+.archivex-icon-grid-item.selected {
+  border-color: var(--interactive-accent);
+  background: rgba(var(--interactive-accent-rgb), 0.08);
+}
+
+/* ==================== Multiselect Options ==================== */
+.archivex-multiselect-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 8px 0;
+}
+.archivex-multiselect-option {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  background: var(--background-secondary);
+  font-size: 0.88em;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.archivex-multiselect-option:hover {
+  background: var(--background-modifier-hover);
+}
+
+/* ==================== Field Row Options Badge ==================== */
+.archivex-field-row-options {
+  font-size: 0.75em;
+  color: var(--text-muted);
+  margin-left: 4px;
+}
+.archivex-field-row-options-clickable {
+  cursor: pointer;
+  border-bottom: 1px dashed transparent;
+  transition: border-color 0.15s, color 0.15s;
+}
+.archivex-field-row-options-clickable:hover {
+  border-bottom-color: var(--interactive-accent);
+  color: var(--interactive-accent);
+}
+
+/* ==================== Clickable Image Thumb ==================== */
+.archivex-media-list-thumb-clickable {
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+.archivex-media-list-thumb-clickable:hover {
+  opacity: 0.7;
+}
+
 .archivex-field-rename-input {
   flex: 1;
   padding: 4px 8px;

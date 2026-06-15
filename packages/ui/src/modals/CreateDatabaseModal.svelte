@@ -1,6 +1,6 @@
 <script lang="ts">
   import { dataProvider } from "../stores";
-  import { FIELD_TYPES, getFieldIcon } from "@archivex/core";
+  import { FIELD_TYPES, DATABASE_ICONS, getFieldIcon } from "@archivex/core";
   import type { FieldDefinition, FieldType } from "@archivex/core";
   import Icon from "../components/Icon.svelte";
 
@@ -8,12 +8,14 @@
   export let onCreated: () => void;
 
   let dbName = "";
+  let dbIcon = "folder";
   let fields: FieldDefinition[] = [{ name: "title", type: "text", label: "Title" }];
 
   // Add field popup state
   let showAddFieldPopup = false;
   let newFieldName = "";
   let newFieldType: FieldType = "text";
+  let newFieldOptions = "";
 
   // Rename state
   let renamingIndex: number | null = null;
@@ -22,6 +24,7 @@
   function openAddFieldPopup() {
     newFieldName = "";
     newFieldType = "text";
+    newFieldOptions = "";
     showAddFieldPopup = true;
   }
 
@@ -38,7 +41,20 @@
     if (suffix > 1) {
       finalLabel = `${label} ${suffix}`;
     }
-    fields = [...fields, { name, type: newFieldType, label: finalLabel }];
+
+    const field: FieldDefinition = { name, type: newFieldType, label: finalLabel };
+
+    // Add options for select/multiselect
+    if (newFieldType === "select" || newFieldType === "multiselect") {
+      const opts = newFieldOptions.split(",").map(s => s.trim()).filter(Boolean);
+      if (opts.length === 0) {
+        alert("Please provide at least one option for select/multiselect field");
+        return;
+      }
+      field.options = opts;
+    }
+
+    fields = [...fields, field];
     showAddFieldPopup = false;
   }
 
@@ -89,7 +105,7 @@
     if (!provider) return;
 
     try {
-      await provider.createDatabase(dbName.trim(), fields);
+      await provider.createDatabase(dbName.trim(), fields, dbIcon);
       closeModal();
       onCreated();
     } catch (e) {
@@ -103,6 +119,26 @@
   <label class="modal-label" for="create-db-name">Database Name</label>
   <input type="text" id="create-db-name" class="modal-input" bind:value={dbName} placeholder="Enter database name..." />
 </div>
+
+<div class="modal-group">
+  <span class="modal-label">Icon</span>
+  <div class="archivex-icon-grid">
+    {#each DATABASE_ICONS as iconItem}
+      <div
+        class="archivex-icon-grid-item"
+        class:selected={dbIcon === iconItem.name}
+        on:click={() => dbIcon = iconItem.name}
+        on:keypress={() => dbIcon = iconItem.name}
+        role="button"
+        tabindex="0"
+        title={iconItem.label}
+      >
+        <Icon name={iconItem.name} size={20} />
+      </div>
+    {/each}
+  </div>
+</div>
+
 <div class="modal-group">
   <span class="modal-label">Fields</span>
   <div class="archivex-field-list">
@@ -121,6 +157,9 @@
           <span class="archivex-field-row-label archivex-field-row-label-clickable" on:click={() => startRename(i)} on:keypress={() => startRename(i)} role="button" tabindex="0">{field.label || field.name}</span>
         {/if}
         <span class="archivex-field-row-type">{field.type}</span>
+        {#if field.options}
+          <span class="archivex-field-row-options" title={field.options.join(", ")}>({field.options.length})</span>
+        {/if}
         <div class="archivex-field-row-actions">
           <button class="archivex-field-action-btn archivex-field-delete-btn" on:click={() => removeField(i)}><Icon name="x" size={12} /></button>
         </div>
@@ -165,6 +204,18 @@
           {/each}
         </div>
       </div>
+      {#if newFieldType === "select" || newFieldType === "multiselect"}
+        <div class="modal-group">
+          <label class="modal-label" for="create-field-options">Options (comma separated)</label>
+          <input
+            type="text"
+            id="create-field-options"
+            class="modal-input"
+            bind:value={newFieldOptions}
+            placeholder="Option1, Option2, Option3..."
+          />
+        </div>
+      {/if}
       <div class="modal-actions">
         <button class="archivex-btn" on:click={cancelAddField}>Cancel</button>
         <button class="archivex-btn archivex-btn-primary" on:click={confirmAddField}>Add</button>

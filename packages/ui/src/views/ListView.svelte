@@ -3,6 +3,7 @@
   import type { Database, DatabaseRecord } from "@archivex/core";
 
   export let database: Database & { name: string };
+  export let sortedRecords: { record: DatabaseRecord; originalIndex: number }[] = [];
   export let onRecordClick: (record: DatabaseRecord, index: number) => void;
 
   function getAssetUrl(path: string): string {
@@ -27,12 +28,12 @@
   }
 </script>
 
-{#if database.records.length === 0}
+{#if sortedRecords.length === 0}
   <div class="archivex-empty-state"><p>No records yet.</p></div>
 {:else}
   <div class="archivex-list">
-    {#each database.records as record, i}
-      <div class="archivex-list-item" on:click={() => onRecordClick(record, i)} on:keypress={() => onRecordClick(record, i)} role="button" tabindex="0">
+    {#each sortedRecords as { record, originalIndex }}
+      <div class="archivex-list-item" on:click={() => onRecordClick(record, originalIndex)} on:keypress={() => onRecordClick(record, originalIndex)} role="button" tabindex="0">
         {#if getCoverImage(record)}
           <div class="archivex-list-thumb">
             <img src={getCoverImage(record)} alt="" />

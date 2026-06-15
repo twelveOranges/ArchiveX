@@ -90,9 +90,17 @@ DATA_DIR=/path/to/your/data pnpm server
 
 ### Web Server (Development with HMR)
 
+Development mode requires **two terminals** — one for the backend API server and one for the Vite dev server (with hot-reload):
+
 ```bash
+# Terminal 1: Start the Express backend (port 3000)
+pnpm server
+
+# Terminal 2: Start the Vite dev server (port 5173, proxies /api to backend)
 pnpm dev:web
 ```
+
+Then open `http://localhost:5173` in your browser. The Vite dev server automatically proxies all `/api` requests to the Express backend on port 3000.
 
 ### Web Server (Docker)
 

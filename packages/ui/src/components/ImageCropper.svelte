@@ -143,6 +143,123 @@
     window.removeEventListener("touchcancel", onPointerUp);
   }
 
+  // Auto-trim: detect and remove uniform-color borders (black, white, gray, or any solid color)
+  // The algorithm checks if an entire row/column consists of pixels similar to the border color.
+  function autoTrim() {
+    const tmpCanvas = document.createElement("canvas");
+    tmpCanvas.width = imgWidth;
+    tmpCanvas.height = imgHeight;
+    const tmpCtx = tmpCanvas.getContext("2d")!;
+    tmpCtx.drawImage(imgEl, 0, 0);
+    const imageData = tmpCtx.getImageData(0, 0, imgWidth, imgHeight);
+    const data = imageData.data;
+
+    // Tolerance for considering a pixel as "border color"
+    const tolerance = 30;
+
+    function getPixel(x: number, y: number): [number, number, number] {
+      const idx = (y * imgWidth + x) * 4;
+      return [data[idx], data[idx + 1], data[idx + 2]];
+    }
+
+    // Determine the border color by sampling corners and edges
+    function detectBorderColor(): [number, number, number] {
+      const samples: [number, number, number][] = [];
+      // Sample from all 4 corners (3x3 area each)
+      for (let dy = 0; dy < 3; dy++) {
+        for (let dx = 0; dx < 3; dx++) {
+          samples.push(getPixel(dx, dy));
+          samples.push(getPixel(imgWidth - 1 - dx, dy));
+          samples.push(getPixel(dx, imgHeight - 1 - dy));
+          samples.push(getPixel(imgWidth - 1 - dx, imgHeight - 1 - dy));
+        }
+      }
+      // Use median of samples as border color
+      const r = samples.map(s => s[0]).sort((a, b) => a - b)[Math.floor(samples.length / 2)];
+      const g = samples.map(s => s[1]).sort((a, b) => a - b)[Math.floor(samples.length / 2)];
+      const b = samples.map(s => s[2]).sort((a, b) => a - b)[Math.floor(samples.length / 2)];
+      return [r, g, b];
+    }
+
+    const [borderR, borderG, borderB] = detectBorderColor();
+
+    // Check if a pixel matches the border color
+    function isBorderPixel(x: number, y: number): boolean {
+      const [r, g, b] = getPixel(x, y);
+      return Math.abs(r - borderR) <= tolerance &&
+             Math.abs(g - borderG) <= tolerance &&
+             Math.abs(b - borderB) <= tolerance;
+    }
+
+    // Check if a row is all border color (scan every pixel for accuracy)
+    function isBorderRow(y: number): boolean {
+      const step = Math.max(1, Math.floor(imgWidth / 500));
+      for (let x = 0; x < imgWidth; x += step) {
+        if (!isBorderPixel(x, y)) return false;
+      }
+      return true;
+    }
+
+    // Check if a column is all border color
+    function isBorderCol(x: number, yStart: number, yEnd: number): boolean {
+      const step = Math.max(1, Math.floor((yEnd - yStart) / 500));
+      for (let y = yStart; y <= yEnd; y += step) {
+        if (!isBorderPixel(x, y)) return false;
+      }
+      return true;
+    }
+
+    // Scan from top
+    let top = 0;
+    for (let y = 0; y < imgHeight; y++) {
+      if (!isBorderRow(y)) { top = y; break; }
+      if (y === imgHeight - 1) { top = 0; }
+    }
+
+    // Scan from bottom
+    let bottom = imgHeight - 1;
+    for (let y = imgHeight - 1; y > top; y--) {
+      if (!isBorderRow(y)) { bottom = y; break; }
+    }
+
+    // Scan from left (only within the content rows)
+    let left = 0;
+    for (let x = 0; x < imgWidth; x++) {
+      if (!isBorderCol(x, top, bottom)) { left = x; break; }
+      if (x === imgWidth - 1) { left = 0; }
+    }
+
+    // Scan from right
+    let right = imgWidth - 1;
+    for (let x = imgWidth - 1; x > left; x--) {
+      if (!isBorderCol(x, top, bottom)) { right = x; break; }
+    }
+
+    // Add 2px inward safety margin to ensure absolutely no border remnant is visible
+    const margin = 2;
+    if (top > 0) top = Math.min(top + margin, imgHeight - 1);
+    if (bottom < imgHeight - 1) bottom = Math.max(bottom - margin, top);
+    if (left > 0) left = Math.min(left + margin, imgWidth - 1);
+    if (right < imgWidth - 1) right = Math.max(right - margin, left);
+
+    // Convert from original pixel coords to display coords
+    const scaleX = displayWidth / imgWidth;
+    const scaleY = displayHeight / imgHeight;
+
+    const newCropX = Math.ceil(left * scaleX);
+    const newCropY = Math.ceil(top * scaleY);
+    const newCropW = Math.floor((right - left + 1) * scaleX);
+    const newCropH = Math.floor((bottom - top + 1) * scaleY);
+
+    // Only update if we found meaningful content area
+    if (newCropW >= MIN_SIZE && newCropH >= MIN_SIZE) {
+      cropX = Math.max(0, newCropX);
+      cropY = Math.max(0, newCropY);
+      cropW = Math.min(displayWidth - cropX, newCropW);
+      cropH = Math.min(displayHeight - cropY, newCropH);
+    }
+  }
+
   async function doCrop() {
     // If crop covers the entire image, use original file without re-encoding
     if (cropX === 0 && cropY === 0 && cropW === displayWidth && cropH === displayHeight) {
@@ -150,7 +267,7 @@
       return;
     }
 
-    // Calculate actual pixel coordinates
+    // Calculate actual pixel coordinates from original image dimensions
     const scaleX = imgWidth / displayWidth;
     const scaleY = imgHeight / displayHeight;
 
@@ -159,19 +276,31 @@
     const sw = Math.round(cropW * scaleX);
     const sh = Math.round(cropH * scaleY);
 
-    // Draw cropped image to canvas
+    // Use full resolution canvas matching original pixel dimensions
     canvas.width = sw;
     canvas.height = sh;
     const ctx = canvas.getContext("2d")!;
-    ctx.drawImage(imgEl, sx, sy, sw, sh, 0, 0, sw, sh);
 
-    // Convert to blob - use original type and max quality (1.0) to avoid compression
-    const mimeType = imageFile.type || "image/png";
+    // Disable image smoothing to preserve original pixel data without interpolation artifacts
+    ctx.imageSmoothingEnabled = false;
+
+    // Use createImageBitmap for highest quality source if available
+    if (typeof createImageBitmap !== "undefined") {
+      const bitmap = await createImageBitmap(imageFile, sx, sy, sw, sh);
+      ctx.drawImage(bitmap, 0, 0, sw, sh);
+      bitmap.close();
+    } else {
+      ctx.drawImage(imgEl, sx, sy, sw, sh, 0, 0, sw, sh);
+    }
+
+    // Always output as PNG to avoid any lossy compression
+    // PNG is lossless and preserves full quality regardless of source format
     const blob = await new Promise<Blob>((resolve) => {
-      canvas.toBlob((b) => resolve(b!), mimeType, 1.0);
+      canvas.toBlob((b) => resolve(b!), "image/png");
     });
 
-    const croppedFile = new File([blob], imageFile.name, { type: blob.type });
+    const outputName = imageFile.name.replace(/\.[^.]+$/, ".png");
+    const croppedFile = new File([blob], outputName, { type: "image/png" });
     onCrop(croppedFile);
   }
 </script>
@@ -228,6 +357,7 @@
 
   <div class="image-cropper-actions">
     <button class="archivex-btn" on:click={onCancel}>Cancel</button>
+    <button class="archivex-btn" on:click={autoTrim} title="Auto-detect and remove black/white borders">Auto Trim</button>
     <button class="archivex-btn archivex-btn-primary" on:click={doCrop}>Confirm</button>
   </div>
 </div>

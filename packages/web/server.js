@@ -126,12 +126,21 @@ function parseYamlDatabase(content) {
     const parsed = yaml.parse(content);
     if (!parsed || !parsed.schema || !parsed.records) return null;
     const schema = {
-      fields: (parsed.schema.fields || []).map((f) => ({
-        name: f.name || "",
-        type: f.type || "text",
-        label: f.label || f.name || "",
-      })),
+      fields: (parsed.schema.fields || []).map((f) => {
+        const field = {
+          name: f.name || "",
+          type: f.type || "text",
+          label: f.label || f.name || "",
+        };
+        if (f.options && Array.isArray(f.options)) {
+          field.options = f.options;
+        }
+        return field;
+      }),
     };
+    if (parsed.schema.icon) {
+      schema.icon = parsed.schema.icon;
+    }
     const records = (parsed.records || []).map((r) => {
       const record = {};
       for (const field of schema.fields) {
@@ -188,6 +197,7 @@ app.get("/api/databases", (req, res) => {
       name: basename,
       recordCount: db ? db.records.length : 0,
       fieldCount: db ? db.schema.fields.length : 0,
+      icon: db && db.schema.icon ? db.schema.icon : undefined,
     };
   });
   res.json(databases);
@@ -203,7 +213,7 @@ app.get("/api/databases/:name", (req, res) => {
 
 // Create a new database
 app.post("/api/databases", (req, res) => {
-  const { name, fields } = req.body;
+  const { name, fields, icon } = req.body;
   if (!name) return res.status(400).json({ error: "Name is required" });
 
   const filename = `${name}.yaml`;
@@ -212,10 +222,13 @@ app.post("/api/databases", (req, res) => {
     return res.status(409).json({ error: "Database already exists" });
   }
 
+  const schema = {
+    fields: fields || [{ name: "title", type: "text", label: "Title" }],
+  };
+  if (icon) schema.icon = icon;
+
   const database = {
-    schema: {
-      fields: fields || [{ name: "title", type: "text", label: "Title" }],
-    },
+    schema,
     records: [],
   };
 
@@ -237,14 +250,35 @@ app.put("/api/databases/:name", (req, res) => {
     return res.status(404).json({ error: "Database not found" });
   }
 
-  const { newName, fields } = req.body;
+  const { newName, fields, renamedFields, icon } = req.body;
   const db = readDatabase(oldFilename);
   if (!db) return res.status(500).json({ error: "Failed to read database" });
+
+  // Update icon if provided
+  if (icon !== undefined) {
+    if (icon) {
+      db.schema.icon = icon;
+    } else {
+      delete db.schema.icon;
+    }
+  }
 
   // Update fields if provided
   if (fields) {
     const oldFields = db.schema.fields;
     db.schema.fields = fields;
+
+    // Apply field renames first: migrate data from old key to new key
+    if (renamedFields) {
+      for (const record of db.records) {
+        for (const [oldKey, newKey] of Object.entries(renamedFields)) {
+          if (oldKey !== newKey && record[oldKey] !== undefined) {
+            record[newKey] = record[oldKey];
+            delete record[oldKey];
+          }
+        }
+      }
+    }
 
     for (const record of db.records) {
       for (const newField of fields) {

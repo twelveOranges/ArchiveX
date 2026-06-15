@@ -66,6 +66,7 @@
       // Open cropper for image files
       cropperFile = files[0];
       cropperFieldName = fieldName;
+      cropperReplaceIndex = undefined;
       showCropper = true;
     } else {
       // For non-image media, upload directly
@@ -101,9 +102,11 @@
 
   async function handleCropDone(croppedFile: File) {
     const fieldName = cropperFieldName;
+    const replaceIndex = cropperReplaceIndex;
     showCropper = false;
     cropperFile = null;
     cropperFieldName = "";
+    cropperReplaceIndex = undefined;
 
     // Upload and update formData to trigger reactivity
     const provider = $dataProvider;
@@ -111,8 +114,15 @@
     try {
       const result = await provider.uploadFile(database.name, croppedFile);
       const current = getMediaPaths(fieldName, formData);
-      const updated = [...current, result.path];
-      formData = { ...formData, [fieldName]: updated };
+      if (replaceIndex !== undefined && replaceIndex < current.length) {
+        // Replace existing image at index
+        current[replaceIndex] = result.path;
+        formData = { ...formData, [fieldName]: [...current] };
+      } else {
+        // Add new image
+        const updated = [...current, result.path];
+        formData = { ...formData, [fieldName]: updated };
+      }
     } catch (e) {
       alert("Upload failed: " + (e as Error).message);
     }
@@ -122,6 +132,7 @@
     showCropper = false;
     cropperFile = null;
     cropperFieldName = "";
+    cropperReplaceIndex = undefined;
   }
 
   function removeMedia(fieldName: string, index: number) {
@@ -129,6 +140,36 @@
     paths.splice(index, 1);
     formData = { ...formData, [fieldName]: [...paths] };
   }
+
+  async function recropImage(fieldName: string, index: number) {
+    const paths = getMediaPaths(fieldName, formData);
+    const path = paths[index];
+    if (!path) return;
+
+    const provider = $dataProvider;
+    if (!provider) return;
+
+    // Fetch the existing image as a File for the cropper
+    // Preserve original MIME type to avoid lossy re-encoding
+    const url = provider.getAssetUrl(path);
+    try {
+      const response = await fetch(url);
+      const blob = await response.blob();
+      // Detect MIME type from response, fallback to PNG (lossless) instead of JPEG
+      const mimeType = blob.type || response.headers.get("content-type") || "image/png";
+      const ext = mimeType.includes("png") ? ".png" : mimeType.includes("webp") ? ".webp" : ".png";
+      const file = new File([blob], `recrop${ext}`, { type: mimeType });
+      cropperFieldName = fieldName;
+      cropperReplaceIndex = index;
+      cropperFile = file;
+      showCropper = true;
+    } catch (e) {
+      alert("Failed to load image for cropping");
+    }
+  }
+
+  // Track which index to replace when re-cropping
+  let cropperReplaceIndex: number | undefined = undefined;
 
   async function handleSave() {
     const provider = $dataProvider;
@@ -182,8 +223,37 @@
       <!-- svelte-ignore a11y-label-has-associated-control -->
       <label class="modal-label">{field.label || field.name}</label>
 
-      {#if field.type === "text" || field.type === "url" || field.type === "select"}
+      {#if field.type === "text" || field.type === "url"}
         <input type="text" class="modal-input" bind:value={formData[field.name]} />
+      {:else if field.type === "select"}
+        <select class="modal-input" bind:value={formData[field.name]}>
+          <option value="">-- Select --</option>
+          {#each (field.options || []) as opt}
+            <option value={opt}>{opt}</option>
+          {/each}
+        </select>
+      {:else if field.type === "multiselect"}
+        <div class="archivex-multiselect-options">
+          {#each (field.options || []) as opt}
+            <label class="archivex-multiselect-option">
+              <input
+                type="checkbox"
+                checked={Array.isArray(formData[field.name]) && formData[field.name].includes(opt)}
+                on:change={(e) => {
+                  const current = Array.isArray(formData[field.name]) ? [...formData[field.name]] : [];
+                  if (e.currentTarget.checked) {
+                    current.push(opt);
+                  } else {
+                    const idx = current.indexOf(opt);
+                    if (idx >= 0) current.splice(idx, 1);
+                  }
+                  formData = { ...formData, [field.name]: current };
+                }}
+              />
+              <span>{opt}</span>
+            </label>
+          {/each}
+        </div>
       {:else if field.type === "integer"}
         <input type="number" class="modal-input" step="1" bind:value={formData[field.name]} />
       {:else if field.type === "number"}
@@ -209,7 +279,14 @@
             {#each getMediaPaths(field.name, formData) as path, pi}
               <div class="archivex-media-list-item">
                 {#if field.type === "image"}
-                  <img class="archivex-media-list-thumb" src={getAssetUrl(path)} alt="" />
+                  <!-- svelte-ignore a11y-click-events-have-key-events -->
+                  <img
+                    class="archivex-media-list-thumb archivex-media-list-thumb-clickable"
+                    src={getAssetUrl(path)}
+                    alt=""
+                    on:click={() => recropImage(field.name, pi)}
+                    title="Click to crop"
+                  />
                 {:else}
                 <span><Icon name="file" size={14} /></span>
                 {/if}

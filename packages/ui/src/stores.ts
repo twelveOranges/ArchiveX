@@ -14,7 +14,7 @@ export const currentPage = writable<"home" | "detail">("home");
 export const currentDatabase = writable<(Database & { name: string }) | null>(null);
 
 // Current view mode
-export const currentMode = writable<"card" | "images" | "table" | "list">("card");
+export const currentMode = writable<"card" | "images" | "table" | "list" | "slide">("card");
 
 // Card size for grid views
 export const cardSize = writable<number>(120);

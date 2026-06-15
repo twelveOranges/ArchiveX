@@ -6,8 +6,8 @@ import type { DatabaseInfo, Database, FieldDefinition, DatabaseRecord, UploadRes
 export interface DataProvider {
   listDatabases(): Promise<DatabaseInfo[]>;
   getDatabase(name: string): Promise<Database & { name: string }>;
-  createDatabase(name: string, fields: FieldDefinition[]): Promise<void>;
-  updateDatabase(name: string, newName?: string, fields?: FieldDefinition[]): Promise<void>;
+  createDatabase(name: string, fields: FieldDefinition[], icon?: string): Promise<void>;
+  updateDatabase(name: string, newName?: string, fields?: FieldDefinition[], renamedFields?: Record<string, string>, icon?: string): Promise<void>;
   deleteDatabase(name: string): Promise<void>;
   addRecord(dbName: string, record: DatabaseRecord): Promise<void>;
   updateRecord(dbName: string, index: number, record: DatabaseRecord): Promise<void>;

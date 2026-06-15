@@ -118,7 +118,7 @@
         <button class="archivex-db-card-action-btn" title="Edit" on:click|stopPropagation={() => showEditDialog(db.name)}><Icon name="edit" size={14} /></button>
         <button class="archivex-db-card-action-btn archivex-db-card-delete-btn" title="Delete" on:click|stopPropagation={() => confirmDelete(db.name)}><Icon name="trash" size={14} /></button>
       </div>
-      <div class="archivex-db-card-icon"><Icon name="folder" size={28} /></div>
+      <div class="archivex-db-card-icon"><Icon name={db.icon || "folder"} size={28} /></div>
       <div class="archivex-db-card-info">
         <h3>{db.name}</h3>
         <div class="archivex-db-card-meta">{db.recordCount} records · {db.fieldCount} fields</div>

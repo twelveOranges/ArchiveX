@@ -23,10 +23,12 @@ export interface FieldDefinition {
   name: string;
   type: FieldType;
   label: string;
+  options?: string[];
 }
 
 export interface DatabaseSchema {
   fields: FieldDefinition[];
+  icon?: string;
 }
 
 export interface DatabaseRecord {
@@ -43,6 +45,7 @@ export interface DatabaseInfo {
   name: string;
   recordCount: number;
   fieldCount: number;
+  icon?: string;
 }
 
 export interface UploadResult {

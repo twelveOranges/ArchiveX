@@ -11,11 +11,10 @@
   const records = indices.map((i) => database.records[i]);
   const fields = database.schema.fields;
 
-  // For each field, track which record index is selected (index into `records` array)
-  // For media fields (image/video/audio), allow multiple selections
-  let selections: Record<string, number | number[]> = {};
+  // For each field, track which record indices are selected (supports multi-select for all fields)
+  let selections: Record<string, number[]> = {};
 
-  // Initialize selections: default to first non-null value
+  // Initialize selections: default to first non-null value for all fields
   for (const field of fields) {
     if (isMediaField(field)) {
       // For media fields, default select all that have values
@@ -28,8 +27,8 @@
       }
       selections[field.name] = selected.length > 0 ? selected : [0];
     } else {
-      // For non-media fields, default to first non-null
-      let found = 0;
+      // For non-media fields, default to first non-null; if all empty, select first record
+      let found = -1;
       for (let i = 0; i < records.length; i++) {
         const val = records[i][field.name];
         if (val !== null && val !== undefined && val !== "") {
@@ -37,7 +36,7 @@
           break;
         }
       }
-      selections[field.name] = found;
+      selections[field.name] = [found >= 0 ? found : 0];
     }
   }
 
@@ -69,27 +68,18 @@
     const field = fields.find((f) => f.name === fieldName);
     if (!field) return;
 
-    if (isMediaField(field)) {
-      // Toggle selection for media fields
-      const current = (selections[fieldName] as number[]) || [];
-      if (current.includes(recordIdx)) {
-        selections[fieldName] = current.filter((i) => i !== recordIdx);
-      } else {
-        selections[fieldName] = [...current, recordIdx];
-      }
+    // All fields now support toggle (multi-select)
+    const current = selections[fieldName] || [];
+    if (current.includes(recordIdx)) {
+      // Deselect: allow removing even the last selection
+      selections = { ...selections, [fieldName]: current.filter((i) => i !== recordIdx) };
     } else {
-      selections[fieldName] = recordIdx;
+      selections = { ...selections, [fieldName]: [...current, recordIdx] };
     }
-    selections = selections; // trigger reactivity
   }
 
   function isSelected(fieldName: string, recordIdx: number): boolean {
-    const field = fields.find((f) => f.name === fieldName);
-    if (!field) return false;
-    if (isMediaField(field)) {
-      return ((selections[fieldName] as number[]) || []).includes(recordIdx);
-    }
-    return selections[fieldName] === recordIdx;
+    return (selections[fieldName] || []).includes(recordIdx);
   }
 
   function getDisplayValue(record: DatabaseRecord, field: FieldDefinition): string {
@@ -113,8 +103,8 @@
       // Build merged record
       const merged: DatabaseRecord = {};
       for (const field of fields) {
+        const selectedIndices = selections[field.name] || [];
         if (isMediaField(field)) {
-          const selectedIndices = (selections[field.name] as number[]) || [];
           const allPaths: string[] = [];
           for (const idx of selectedIndices) {
             const paths = getMediaPaths(records[idx], field.name);
@@ -122,8 +112,18 @@
           }
           merged[field.name] = allPaths.length === 0 ? null : (allPaths.length === 1 ? allPaths[0] : allPaths);
         } else {
-          const selectedIdx = selections[field.name] as number;
-          merged[field.name] = records[selectedIdx]?.[field.name] ?? null;
+          if (selectedIndices.length === 0) {
+            merged[field.name] = null;
+          } else if (selectedIndices.length === 1) {
+            merged[field.name] = records[selectedIndices[0]]?.[field.name] ?? null;
+          } else {
+            // Multiple selections: join values with semicolon
+            const values = selectedIndices
+              .map((idx) => records[idx]?.[field.name])
+              .filter((v) => v !== null && v !== undefined && v !== "")
+              .map((v) => String(v));
+            merged[field.name] = values.join("; ");
+          }
         }
       }
 
@@ -146,7 +146,7 @@
 
 <div class="merge-modal">
   <div class="modal-title">Merge {records.length} Records</div>
-  <p class="merge-hint">Select which value to keep for each field. Media fields support multiple selections.</p>
+  <p class="merge-hint">Click to select/deselect values for each field. Multiple selections will be joined with semicolons.</p>
 
   <div class="merge-table-wrapper">
     <table class="merge-table">
@@ -168,9 +168,9 @@
             {#each records as record, ri}
               <td
                 class="merge-cell"
-                class:selected={isSelected(field.name, ri)}
-                on:click={() => selectField(field.name, ri)}
-                on:keypress={() => {}}
+                class:selected={(selections[field.name] || []).includes(ri)}
+                on:click|stopPropagation={() => selectField(field.name, ri)}
+                on:keypress|stopPropagation={() => selectField(field.name, ri)}
                 role="button"
                 tabindex="0"
               >
@@ -207,7 +207,7 @@
                   {/if}
                 </div>
                 <div class="merge-check">
-                  {#if isSelected(field.name, ri)}
+                  {#if (selections[field.name] || []).includes(ri)}
                     <Icon name="check-circle" size={16} />
                   {:else}
                     <span class="merge-uncheck"></span>

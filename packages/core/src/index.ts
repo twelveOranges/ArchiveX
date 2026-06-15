@@ -5,7 +5,7 @@ export type { FieldType, FieldDefinition, DatabaseSchema, DatabaseRecord, Databa
 export { parseYamlDatabase, filterRecords } from "./parser";
 
 // Utils
-export { toSafeAssetName, hashBufferBrowser, getFieldIcon, getAcceptType, FIELD_TYPES, escapeHtml } from "./utils";
+export { toSafeAssetName, hashBufferBrowser, getFieldIcon, getAcceptType, FIELD_TYPES, DATABASE_ICONS, escapeHtml } from "./utils";
 
 // Provider interface
 export type { DataProvider } from "./provider";

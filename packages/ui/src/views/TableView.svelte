@@ -3,6 +3,7 @@
   import type { Database, DatabaseRecord } from "@archivex/core";
 
   export let database: Database & { name: string };
+  export let sortedRecords: { record: DatabaseRecord; originalIndex: number }[] = [];
   export let onRecordClick: (record: DatabaseRecord, index: number) => void;
 
   function getAssetUrl(path: string): string {
@@ -12,7 +13,7 @@
   }
 
   function formatCellValue(field: any, value: any): string {
-    if (value === null || value === undefined || value === "") return "—";
+    if (value === null || value === undefined || value === "") return "\u2014";
     if (field.type === "image" || field.type === "video" || field.type === "audio") {
       return Array.isArray(value) ? `${value.length} files` : "1 file";
     }
@@ -23,7 +24,7 @@
   }
 </script>
 
-{#if database.records.length === 0}
+{#if sortedRecords.length === 0}
   <div class="archivex-empty-state"><p>No records yet.</p></div>
 {:else}
   <div class="archivex-table-wrapper">
@@ -36,8 +37,8 @@
         </tr>
       </thead>
       <tbody>
-        {#each database.records as record, i}
-          <tr on:click={() => onRecordClick(record, i)} style="cursor:pointer">
+        {#each sortedRecords as { record, originalIndex }}
+          <tr on:click={() => onRecordClick(record, originalIndex)} style="cursor:pointer">
             {#each database.schema.fields as field}
               <td>
                 {#if field.type === "tags" && Array.isArray(record[field.name])}

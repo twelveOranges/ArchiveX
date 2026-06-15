@@ -1,10 +1,11 @@
 <script lang="ts">
   import { dataProvider, currentPage, currentDatabase, currentMode, cardSize, sortField, sortOrder, multiSelectMode, selectedIndices, platform } from "../stores";
-  import type { DatabaseRecord } from "@archivex/core";
+  import type { DatabaseRecord, FieldDefinition } from "@archivex/core";
   import CardView from "../views/CardView.svelte";
   import ImagesView from "../views/ImagesView.svelte";
   import TableView from "../views/TableView.svelte";
   import ListView from "../views/ListView.svelte";
+  import SlideshowView from "../views/SlideView.svelte";
   import AddRecordModal from "../modals/AddRecordModal.svelte";
   import RecordPreviewModal from "../modals/RecordPreviewModal.svelte";
   import MergeRecordsModal from "../modals/MergeRecordsModal.svelte";
@@ -14,17 +15,73 @@
   export let closeModal: () => void;
   export let openLightbox: (images: string[], index: number) => void;
 
-  // Sorted records with original indices
-  $: sortedRecords = getSortedRecords($currentDatabase, $sortField, $sortOrder);
+  // Filter state: fieldName -> selected option values
+  let filterValues: Record<string, string[]> = {};
+  let showFilterPanel = false;
 
-  function getSortedRecords(db: any, field: string, order: string): { record: DatabaseRecord; originalIndex: number }[] {
+  // Search state
+  let searchQuery = "";
+
+  // Get select/multiselect fields that have options
+  $: filterableFields = ($currentDatabase?.schema.fields || []).filter(
+    (f: FieldDefinition) => (f.type === "select" || f.type === "multiselect") && f.options && f.options.length > 0
+  );
+
+  // Check if any filter is active
+  $: hasActiveFilter = Object.values(filterValues).some(v => v.length > 0);
+
+  // Sorted + filtered + searched records
+  $: sortedRecords = getFilteredRecords($currentDatabase, $sortField, $sortOrder, filterValues, searchQuery);
+
+  function getFilteredRecords(db: any, field: string, order: string, filters: Record<string, string[]>, search: string): { record: DatabaseRecord; originalIndex: number }[] {
     if (!db || !db.records) return [];
-    const indexed = db.records.map((record: DatabaseRecord, i: number) => ({ record, originalIndex: i }));
+    let indexed = db.records.map((record: DatabaseRecord, i: number) => ({ record, originalIndex: i }));
+
+    // Apply filter
+    for (const [fieldName, selectedOpts] of Object.entries(filters)) {
+      if (selectedOpts.length === 0) continue;
+      indexed = indexed.filter(({ record }) => {
+        const val = record[fieldName];
+        if (Array.isArray(val)) {
+          // multiselect: record has array, check if any selected option is in it
+          return val.some((v: any) => selectedOpts.includes(String(v)));
+        }
+        // select: single value
+        return val !== null && val !== undefined && selectedOpts.includes(String(val));
+      });
+    }
+
+    // Apply search - supports Chinese, numbers, case-insensitive
+    // Exclude file-type fields (image, video, audio, file) whose values are hashes/filenames
+    if (search.trim()) {
+      const q = search.trim().toLowerCase();
+      const fileTypeFields = new Set(
+        (db.schema.fields || [])
+          .filter((f: FieldDefinition) => ["image", "video", "audio", "file"].includes(f.type))
+          .map((f: FieldDefinition) => f.name)
+      );
+      indexed = indexed.filter(({ record }) => {
+        for (const key of Object.keys(record)) {
+          // Skip file-type fields (their values are hashes/paths, not user-searchable content)
+          if (fileTypeFields.has(key)) continue;
+          const val = record[key];
+          if (val === null || val === undefined) continue;
+          if (Array.isArray(val)) {
+            if (val.some((v: any) => String(v).toLowerCase().includes(q))) return true;
+          } else if (typeof val === "number") {
+            if (String(val).includes(q)) return true;
+          } else {
+            if (String(val).toLowerCase().includes(q)) return true;
+          }
+        }
+        return false;
+      });
+    }
+
+    // Sort
     if (field === "added") {
-      // Sort by original index (add time)
       return order === "asc" ? indexed : [...indexed].reverse();
     }
-    // Sort by field value
     return [...indexed].sort((a, b) => {
       const va = a.record[field] ?? "";
       const vb = b.record[field] ?? "";
@@ -33,6 +90,19 @@
       const cmp = strA.localeCompare(strB);
       return order === "asc" ? cmp : -cmp;
     });
+  }
+
+  function toggleFilterOption(fieldName: string, option: string) {
+    const current = filterValues[fieldName] || [];
+    if (current.includes(option)) {
+      filterValues = { ...filterValues, [fieldName]: current.filter(o => o !== option) };
+    } else {
+      filterValues = { ...filterValues, [fieldName]: [...current, option] };
+    }
+  }
+
+  function clearAllFilters() {
+    filterValues = {};
   }
 
   function goBack() {
@@ -193,6 +263,16 @@
           </button>
         </div>
 
+        <!-- Filter button -->
+        {#if filterableFields.length > 0}
+          <button
+            class="archivex-btn-icon"
+            class:active={showFilterPanel || hasActiveFilter}
+            on:click={() => showFilterPanel = !showFilterPanel}
+            title="Filter"
+          ><Icon name="filter" size={14} /></button>
+        {/if}
+
         <!-- Multi-select toggle -->
         <button
           class="archivex-btn-icon"
@@ -212,10 +292,52 @@
           <option value="images">Images</option>
           <option value="table">Table</option>
           <option value="list">List</option>
+          <option value="slide">Slide</option>
         </select>
+
+        <!-- Search box -->
+        <div class="archivex-search-box">
+          <Icon name="search" size={14} />
+          <input
+            type="text"
+            class="archivex-search-input"
+            placeholder="Search..."
+            bind:value={searchQuery}
+          />
+          {#if searchQuery}
+            <span class="archivex-search-count">{sortedRecords.length} results</span>
+            <button class="archivex-search-clear" on:click={() => searchQuery = ""}>×</button>
+          {/if}
+        </div>
       </div>
     </div>
   </div>
+
+  <!-- Filter panel -->
+  {#if showFilterPanel && filterableFields.length > 0}
+    <div class="archivex-filter-panel">
+      <div class="archivex-filter-panel-header">
+        <span class="archivex-filter-panel-title">Filter</span>
+        {#if hasActiveFilter}
+          <button class="archivex-btn-text archivex-filter-clear" on:click={clearAllFilters}>Clear All</button>
+        {/if}
+      </div>
+      {#each filterableFields as field}
+        <div class="archivex-filter-group">
+          <span class="archivex-filter-group-label">{field.label || field.name}</span>
+          <div class="archivex-filter-options">
+            {#each (field.options || []) as opt}
+              <button
+                class="archivex-filter-chip"
+                class:active={(filterValues[field.name] || []).includes(opt)}
+                on:click={() => toggleFilterOption(field.name, opt)}
+              >{opt}</button>
+            {/each}
+          </div>
+        </div>
+      {/each}
+    </div>
+  {/if}
 
   <!-- Multi-select action bar -->
   {#if $multiSelectMode}
@@ -239,9 +361,11 @@
     {:else if $currentMode === "images"}
       <ImagesView database={$currentDatabase} cardSize={$cardSize} onAddClick={showAddRecord} {openLightbox} />
     {:else if $currentMode === "table"}
-      <TableView database={$currentDatabase} onRecordClick={showRecordPreview} />
+      <TableView database={$currentDatabase} {sortedRecords} onRecordClick={showRecordPreview} />
     {:else if $currentMode === "list"}
-      <ListView database={$currentDatabase} onRecordClick={showRecordPreview} />
+      <ListView database={$currentDatabase} {sortedRecords} onRecordClick={showRecordPreview} />
+    {:else if $currentMode === "slide"}
+      <SlideshowView database={$currentDatabase} onClose={() => { $currentMode = "card"; }} {openLightbox} />
     {/if}
   </div>
 {/if}
